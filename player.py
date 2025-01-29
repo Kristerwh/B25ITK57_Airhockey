@@ -17,8 +17,8 @@ class Player:
         min_x, max_x = -0.6 + paddle_radius / 1000, 0.6 - paddle_radius / 1000
         min_y, max_y = -0.4 + paddle_radius / 1000, 0.4 - paddle_radius / 1000
 
-        acceleration = 0.112
-        deceleration = 0.15
+        acceleration = 0.02
+        deceleration = 0.05
 
         if direction == "up" and current_pos[1] < max_y:
             self.velocity[1] += acceleration

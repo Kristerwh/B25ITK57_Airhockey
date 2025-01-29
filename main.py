@@ -51,9 +51,9 @@ def main():
         puck.apply_friction()
 
         if puck.check_collision("paddle1"):
-            puck.apply_force([0.1, 0.1])
+            puck.apply_force([0.5, 0.5])
         if puck.check_collision("paddle2"):
-            puck.apply_force([-0.1, -0.1])
+            puck.apply_force([-0.5, -0.5])
 
     physics.close()
 

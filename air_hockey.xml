@@ -5,10 +5,10 @@
         <!--airhockey table and walls -->
         <geom name="table" type="plane" pos="0 0 0" size="0.6 0.4 0.01" rgba="0.5 0.56 0.5 1" />
 
-        <geom name="wall_left" type="box" pos="-0.6 0 0.05" size="0.01 0.4 0.05" rgba="1 0 0 0.5" condim="3" friction="1 1 0" />
-        <geom name="wall_right" type="box" pos="0.6 0 0.05" size="0.01 0.4 0.05" rgba="1 0 0 0.5" condim="3" friction="1 1 0" />
-        <geom name="wall_top" type="box" pos="0 0.4 0.05" size="0.6 0.01 0.05" rgba="1 0 0 0.5" condim="3" friction="1 1 0" />
-        <geom name="wall_bottom" type="box" pos="0 -0.4 0.05" size="0.6 0.01 0.05" rgba="1 0 0 0.5" condim="3" friction="1 1 0" />
+        <geom name="wall_left" type="box" pos="-0.6 0 0.06" size="0.01 0.4 0.06" rgba="1 0 0 0.5" condim="3" friction="1 1 0" />
+        <geom name="wall_right" type="box" pos="0.6 0 0.06" size="0.01 0.4 0.06" rgba="1 0 0 0.5" condim="3" friction="1 1 0" />
+        <geom name="wall_top" type="box" pos="0 0.4 0.05" size="0.6 0.01 0.06" rgba="1 0 0 0.5" condim="3" friction="1 1 0" />
+        <geom name="wall_bottom" type="box" pos="0 -0.4 0.05" size="0.6 0.01 0.06" rgba="1 0 0 0.5" condim="3" friction="1 1 0" />
 
         <!-- markings in middle of the table(line and circle) -->
         <geom name="midline" type="box" pos="0 0 0.001" size="0.005 0.4 0.001" rgba="1 1 1 1" />
@@ -20,19 +20,19 @@
 
         <!--Puck-->
         <body name="puck" pos="0 0 0.01">
-            <geom type="cylinder" size="0.03 0.005" mass="0.2" rgba="1 1 1 1" density="0.1" condim="3" friction="0.5 0.5 0" />
+            <geom type="cylinder" size="0.03 0.005" mass="0.1" rgba="1 1 1 1" density="0.1" condim="3" friction="0.5 0.5 0" />
             <joint name="puck_joint" type="free" damping="0.2" />
         </body>
 
         <!--Paddle 1(left)-->
         <body name="paddle1" pos="-0.4 0 0.01">
-            <geom type="cylinder" size="0.035 0.01" mass="0.3" rgba="1 0 0 1" density="0.5" condim="3" friction="1 1 0" />
+            <geom type="cylinder" size="0.035 0.01" mass="0.2" rgba="1 0 0 1" density="0.5" condim="3" friction="1 1 0" />
             <joint name="paddle1_joint" type="free" damping="0.1" />
         </body>
 
         <!-- Paddle 2(right)-->
         <body name="paddle2" pos="0.4 0 0.01">
-            <geom type="cylinder" size="0.035 0.01" mass="0.3" rgba="0 0 1 1" density="0.5" condim="3" friction="1 1 0" />
+            <geom type="cylinder" size="0.035 0.01" mass="0.2" rgba="0 0 1 1" density="0.5" condim="3" friction="1 1 0" />
             <joint name="paddle2_joint" type="free" damping="0.1" />
         </body>
     </worldbody>
