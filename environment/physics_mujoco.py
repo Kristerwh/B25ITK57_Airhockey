@@ -25,8 +25,12 @@ class MuJoCoPhysics:
 
 
         self.camera.azimuth = 180
+
+        #vinkel
         self.camera.elevation = -30
+        #zoom
         self.camera.distance = 2.5
+
         self.camera.lookat = np.array([0, 0, 0.05])
 
         self.options = mujoco.MjvOption()
