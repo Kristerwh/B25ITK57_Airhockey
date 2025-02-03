@@ -24,10 +24,10 @@ class MuJoCoPhysics:
         self.camera = mujoco.MjvCamera()
 
 
-        # self.camera.azimuth = 360
-        # self.camera.elevation = -50  # Less tilt to center the view
-        # self.camera.distance = 1.5  # Zoom out slightly
-        # self.camera.lookat = np.array([0.05, 0.05, 0.05])
+        self.camera.azimuth = 180
+        self.camera.elevation = -30
+        self.camera.distance = 2.5
+        self.camera.lookat = np.array([0, 0, 0.05])
 
         self.options = mujoco.MjvOption()
         self.perturb = mujoco.MjvPerturb()
@@ -39,9 +39,35 @@ class MuJoCoPhysics:
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
         return self.data.xpos[body_id][:2].tolist()
 
-    def apply_force(self, body_name, force):
+    #testing with actuator instead of apply force with xfrc_
+    def actuator_control(self, actuator_name, control_value):
+        actuator_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, actuator_name)
+        self.data.ctrl[actuator_id] = control_value
+
+    def stop_actuators(self, actuator_x, actuator_y):
+        self.actuator_control(actuator_x, 0)
+        self.actuator_control(actuator_y, 0)
+
+    def check_collision(self, body_name1, body_name2):
+        body_id1 = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name1)
+        body_id2 = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name2)
+
+        for i in range(self.data.ncon):
+            contact = self.data.contact[i]
+            if (contact.geom1 == body_id1 and contact.geom2 == body_id2) or \
+                    (contact.geom1 == body_id2 and contact.geom2 == body_id1):
+                return True
+        return False
+
+    def set_paddle_position(self, body_name, position):
         body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
-        self.data.xfrc_applied[body_id][:2] = force
+        joint_id = self.model.jnt_qposadr[self.model.body_jntadr[body_id]]
+
+        position[0] = np.clip(position[0], -1.15, 1.15)
+        position[1] = np.clip(position[1], -0.55, 0.55)
+
+        self.data.qpos[joint_id:joint_id + 2] = position
+        self.data.qvel[joint_id:joint_id + 2] *= 0.9
 
     def render(self):
         if glfw.window_should_close(self.window):
@@ -51,7 +77,7 @@ class MuJoCoPhysics:
 
         mujoco.mjv_updateScene(self.model, self.data, self.options, self.perturb, self.camera,
                                mujoco.mjtCatBit.mjCAT_ALL, self.scene)
-        mujoco.mjr_render(mujoco.MjrRect(0, 100, 800, 800), self.scene, self.renderer)
+        mujoco.mjr_render(mujoco.MjrRect(0, 0, 800, 800), self.scene, self.renderer)
 
         glfw.swap_buffers(self.window)
         glfw.poll_events()

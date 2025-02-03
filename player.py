@@ -1,57 +1,52 @@
 import mujoco
-
-from constants import WIDTH, HEIGHT, paddle_move_range, paddle_radius
+import numpy as np
 
 
 class Player:
-    def __init__(self, physics, body_name, start_position, ai_player=False):
+    def __init__(self, physics, body_name,actuator_x, actuator_y,ai_player=False, mouse_control=False):
         self.physics = physics
         self.body_name = body_name
-        self.start_position = start_position
         self.ai_player = ai_player
         self.velocity = [0, 0]
+        self.actuator_x = actuator_x
+        self.actuator_y = actuator_y
+        self.mouse_control = mouse_control
+        self.is_grabbed = False
+
 
     def controls(self, direction):
-        current_pos = self.physics.get_position(self.body_name)
+        acceleration = 0.1
 
-        min_x, max_x = -0.6 + paddle_radius / 1000, 0.6 - paddle_radius / 1000
-        min_y, max_y = -0.4 + paddle_radius / 1000, 0.4 - paddle_radius / 1000
-
-        acceleration = 0.02
-        deceleration = 0.05
-
-        if direction == "up" and current_pos[1] < max_y:
-            self.velocity[1] += acceleration
-        elif direction == "down" and current_pos[1] > min_y:
-            self.velocity[1] -= acceleration
+        if direction == "down":
+            self.physics.actuator_control(self.actuator_y, acceleration)
+        elif direction == "up":
+            self.physics.actuator_control(self.actuator_y, -acceleration)
+        elif direction == "left":
+            self.physics.actuator_control(self.actuator_x, -acceleration)
+        elif direction == "right":
+            self.physics.actuator_control(self.actuator_x, acceleration)
         else:
-            self.velocity[1] *= (1 - deceleration)
-
-        if direction == "left" and current_pos[0] > min_x:
-            self.velocity[0] -= acceleration
-        elif direction == "right" and current_pos[0] < max_x:
-            self.velocity[0] += acceleration
-        else:
-            self.velocity[0] *= (1 - deceleration)
-
-        self.physics.apply_force(self.body_name, self.velocity)
-
-        # ##for controls for ''first person'' perspective, commented out for now, might be needed later
-        # if direction == "left" and current_pos[1] < max_y:
-        #     self.physics.apply_force(self.body_name, [0, force_magnitude])
-        # elif direction == "right" and current_pos[1] > min_y:
-        #     self.physics.apply_force(self.body_name, [0, -force_magnitude])
-        # elif direction == "down" and current_pos[0] > min_x:
-        #     self.physics.apply_force(self.body_name, [-force_magnitude, 0])
-        # elif direction == "up" and current_pos[0] < max_x:
-        #     self.physics.apply_force(self.body_name, [force_magnitude, 0])
+            self.stop()
 
     def stop(self):
-        self.physics.apply_force(self.body_name, [0, 0])
+        self.physics.actuator_control(self.actuator_x, 0)
+        self.physics.actuator_control(self.actuator_y, 0)
 
-        paddle_id = mujoco.mj_name2id(self.physics.model, mujoco.mjtObj.mjOBJ_BODY, self.body_name)
+    def mouse_control_movement(self, x, y, mouse_pressed):
+        if self.mouse_control:
+            if mouse_pressed:
+                self.is_grabbed = True
+            elif not mouse_pressed:
+                self.is_grabbed = False
 
-        if paddle_id < len(self.physics.model.jnt_qposadr):
-            joint_index = self.physics.model.jnt_qposadr[paddle_id]
-            if joint_index + 2 < len(self.physics.data.qpos):
-                self.physics.data.qpos[joint_index + 2] = 0.02
+            if self.is_grabbed:
+                if np.isnan(x) or np.isnan(y):
+                    print("error")
+                    return
+                if np.isinf(x) or np.isinf(y):
+                    print("error")
+                    return
+
+                clamped_x = max(-1.15, min(1.15, x))
+                clamped_y = max(-0.55, min(0.55, y))
+                self.physics.set_paddle_position(self.body_name, [clamped_x, clamped_y])
