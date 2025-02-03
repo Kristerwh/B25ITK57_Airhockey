@@ -6,7 +6,7 @@ from player import *
 from puck import *
 
 def main():
-    physics = MuJoCoPhysics("environment\\air_hockey.xml")
+    physics = MuJoCoPhysics("air_hockey.xml")
 
     player1 = Player(physics, "paddle1", "paddle1_actuator_x", "paddle1_actuator_y")
     player2 = Player(physics, "paddle2", "paddle2_actuator_x", "paddle2_actuator_y", mouse_control=True)
@@ -50,7 +50,7 @@ def main():
             mouse_x, mouse_y = glfw.get_cursor_pos(physics.window)
             win_width, win_height = glfw.get_window_size(physics.window)
 
-            normalized_x = (mouse_y / win_height) * 2.3 - 1.15
+            normalized_x = (mouse_y / win_height) * 1.3 - 1.10
             normalized_y = (mouse_x / win_width) * 1.1 - 0.55
 
             clamped_x = max(-1.15, min(1.15, normalized_x))
