@@ -6,7 +6,7 @@ from player import *
 from puck import *
 
 def main():
-    physics = MuJoCoPhysics("air_hockey.xml")
+    physics = MuJoCoPhysics("environment\\air_hockey.xml")
 
     player1 = Player(physics, "paddle1", "paddle1_actuator_x", "paddle1_actuator_y")
     player2 = Player(physics, "paddle2", "paddle2_actuator_x", "paddle2_actuator_y", mouse_control=True)
