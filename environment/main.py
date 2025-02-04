@@ -1,77 +1,91 @@
 import glfw
-import pygame
-from physics_mujoco import MuJoCoPhysics
-from constants import *
-from player import *
-from puck import *
+from constraints import Constraints
+from position_control_wrapper import PositionControl
+from challenge_core import ChallengeCore
+import mujoco
+import mujoco.viewer
+from environment.physics_mujoco import MuJoCoPhysics
+from environment.player import Player
+
+
+class PlaceholderMDP:
+    def __init__(self):
+        self.model = mujoco.MjModel.from_xml_path("airhockey_table.xml")
+        self.data = mujoco.MjData(self.model)
+        self.info = self
+        self.dt = 0.02
+
+    def reset(self):
+        mujoco.mj_resetData(self.model, self.data)
+        return None
+
+    def step(self, action):
+        mujoco.mj_step(self.model, self.data)
+        return None, 0, False, {}
+
+    def render(self, viewer):
+        viewer.sync()
+
+mouse_x, mouse_y = 0, 0
+
+def move_paddle_with_mouse(model, data, action, reldx, reldy, scene, perturb):
+    mujoco.mjv_movePerturb(model, data, action, reldx, reldy, scene, perturb)
 
 def main():
-    physics = MuJoCoPhysics("air_hockey.xml")
+    physics = MuJoCoPhysics("airhockey_table.xml")
+    viewer = mujoco.viewer.launch_passive(physics.physics, physics.data)
 
-    player1 = Player(physics, "paddle1", "paddle1_actuator_x", "paddle1_actuator_y")
-    player2 = Player(physics, "paddle2", "paddle2_actuator_x", "paddle2_actuator_y", mouse_control=True)
-    puck = Puck(physics, "puck")
+    scene = mujoco.MjvScene(physics.physics, maxgeom=1000)
+    perturb = mujoco.MjvPerturb()
+    mujoco.mjv_defaultPerturb(perturb)
 
-    running = True
-    while running:
-        physics.step()
-        running = physics.render()
+    camera = mujoco.MjvCamera()
+    mujoco.mjv_defaultCamera(camera)
 
-        puck_position = puck.get_position()
-        player1_position = physics.get_position("paddle1")
-        player2_position = physics.get_position("paddle2")
+    option = mujoco.MjvOption()
+    option.flags[mujoco.mjtVisFlag.mjVIS_COM] = False
+    option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
 
-        #red paddle controls
-        if glfw.get_key(physics.window, glfw.KEY_W) == glfw.PRESS:
-            player1.controls("up")
-        elif glfw.get_key(physics.window, glfw.KEY_S) == glfw.PRESS:
-            player1.controls("down")
-        elif glfw.get_key(physics.window, glfw.KEY_A) == glfw.PRESS:
-            player1.controls("left")
-        elif glfw.get_key(physics.window, glfw.KEY_D) == glfw.PRESS:
-            player1.controls("right")
-        else:
-            player1.stop()
+    mujoco.mjv_updateScene(physics.physics, physics.data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL,scene)
 
-        # if glfw.get_key(physics.window, glfw.KEY_UP) == glfw.PRESS:
-        #     player2.controls("up")
-        # elif glfw.get_key(physics.window, glfw.KEY_DOWN) == glfw.PRESS:
-        #     player2.controls("down")
-        # elif glfw.get_key(physics.window, glfw.KEY_LEFT) == glfw.PRESS:
-        #     player2.controls("left")
-        # elif glfw.get_key(physics.window, glfw.KEY_RIGHT) == glfw.PRESS:
-        #     player2.controls("right")
-        # else:
-        #     player2.stop()
+    mdp = PlaceholderMDP()
 
-        #blue paddle controls
-        mouse_pressed = glfw.get_mouse_button(physics.window, glfw.MOUSE_BUTTON_LEFT) == glfw.PRESS
-        if mouse_pressed:
-            mouse_x, mouse_y = glfw.get_cursor_pos(physics.window)
-            win_width, win_height = glfw.get_window_size(physics.window)
+    player1 = Player(physics, "paddle1")
+    player2 = Player(physics, "paddle2")
 
-            normalized_x = (mouse_y / win_height) * 1.3 - 1.10
-            normalized_y = (mouse_x / win_width) * 1.1 - 0.55
+    game = ChallengeCore(agent=None, mdp=mdp)
 
-            clamped_x = max(-1.15, min(1.15, normalized_x))
-            clamped_y = max(-0.55, min(0.55, normalized_y))
+    while True:
+        while True:
+            move_paddle_with_mouse(physics.physics, physics.data, mujoco.mjtMouse.mjMOUSE_MOVE_H, 0.01, 0.01, scene,perturb)
+            mujoco.mjv_applyPerturbPose(physics.physics, physics.data, perturb, 1)
+            mujoco.mj_step(physics.physics, physics.data)
+            mujoco.mjv_updateScene(physics.physics, physics.data, mujoco.MjvOption(), None, camera,mujoco.mjtCatBit.mjCAT_ALL, scene)
+            viewer.sync()
 
-            player2.mouse_control_movement(clamped_x, clamped_y, mouse_pressed=True)
+            #puck collision
+            puck_pos = physics.get_position("puck")
+            if puck_pos is not None:
+                puck_pos = Constraints.enforce_table_bounds(puck_pos)
+                physics.set_position("puck", puck_pos)
 
-        goal = puck.point_scored()
-        if goal:
-            print(f"{goal}")
-            puck.puck_reset()
+            #Apply physics constraints (friction, bounce, speed limit)
+            puck_velocity = physics.get_velocity("puck")
+            puck_velocity = Constraints.apply_physics_constraints(puck_velocity)
+            physics.set_velocity("puck", puck_velocity)
 
-        puck.handle_wall_collisions()
-        puck.apply_friction()
+            #paddle range, cant go beyond middle
+            paddle1_pos = physics.get_position("paddle1")
+            paddle1_pos = Constraints.enforce_paddle_bounds(paddle1_pos, "left")
+            physics.set_position("paddle1", paddle1_pos)
 
-        if puck.check_collision("paddle1"):
-            puck.apply_impulse([0.5, 0.5])
-        if puck.check_collision("paddle2"):
-            puck.apply_impulse([-0.5, -0.5])
+            paddle2_pos = physics.get_position("paddle2")
+            paddle2_pos = Constraints.enforce_paddle_bounds(paddle2_pos, "right")
+            physics.set_position("paddle2", paddle2_pos)
 
-    physics.close()
+            mujoco.mjv_applyPerturbPose(physics.physics, physics.data, perturb, 1)
+            mujoco.mj_step(physics.physics, physics.data)
+            viewer.sync()
 
 if __name__ == "__main__":
     main()
