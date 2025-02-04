@@ -90,7 +90,7 @@ class AirhockeyAI:
             # If the mallet can reach the point in time, consider it
             if time_to_reach <= step * 0.01:
                 intercept_points.append((px, py))
-                if len(intercept_points) == 6:
+                if len(intercept_points) == 3:
                     break
 
         return intercept_points
@@ -102,7 +102,7 @@ class AirhockeyAI:
         # Assuming a simple reflection of the puck's trajectory
         ix, iy = intercept_point
         #vx, vy = self.update_puck_position(intercept_point)  # Current puck velocity
-        return self.predict_trajectory(-vx, -vy, ix, iy)  # Reverse Y velocity to simulate rebound
+        return self.predict_trajectory(vx, -vy, ix, iy)  # Reverse Y velocity to simulate rebound
 
     def decide_best_move(self, intercept_points):
         """
@@ -111,35 +111,46 @@ class AirhockeyAI:
         best_move = None
         best_score_distance = float("inf")
 
+        # Define opponent's defensive box
         opponent_defensive_box = (
             (self.goal_center - self.goal_width / 2, self.table_height * 0.8),
             (self.goal_center + self.goal_width / 2, self.table_height)
         )
 
         for point in intercept_points:
-            trajectory = self.predict_puck_after_contact(point,self.vx,self.vy)
+            # Predict puck trajectory after contact at the intercept point
+            trajectory = self.predict_puck_after_contact(point, self.vx, self.vy)
 
-            # Evaluate distance to opponent's goal center
+            # Evaluate the trajectory's proximity to the opponent's goal
             goal_center_x = (opponent_defensive_box[0][0] + opponent_defensive_box[1][0]) / 2
             goal_center_y = (opponent_defensive_box[0][1] + opponent_defensive_box[1][1]) / 2
 
-            final_position = trajectory[-1]
-            distance_to_goal = ((final_position[0] - goal_center_x) ** 2 + (
-                        final_position[1] - goal_center_y) ** 2) ** 0.5
+            # Track how close the puck gets to the goal throughout the trajectory
+            min_distance_to_goal = float("inf")
+            for px, py in trajectory:
+                # Check if the puck enters the opponent's defensive box
+                if opponent_defensive_box[0][0] <= px <= opponent_defensive_box[1][0] and py >= \
+                        opponent_defensive_box[0][1]:
+                    # Prioritize trajectories that actually enter the goal box
+                    return point
 
-            # Choose the intercept point with the closest final puck position to the goal center
-            if distance_to_goal < best_score_distance:
-                best_score_distance = distance_to_goal
+                # Otherwise, compute the distance to the goal center
+                distance_to_goal = ((px - goal_center_x) ** 2 + (py - goal_center_y) ** 2) ** 0.5
+                min_distance_to_goal = min(min_distance_to_goal, distance_to_goal)
+
+            # Select the intercept point that results in the closest trajectory to the goal
+            if min_distance_to_goal < best_score_distance:
+                best_score_distance = min_distance_to_goal
                 best_move = point
 
         return best_move
 
-    def decide_action(self, trajectory):
-        """
+    """def decide_action(self, trajectory):
+    
         Decide the AI's action based on the puck's trajectory.
         :param trajectory: List of points (x, y) representing the puck's predicted path.
         :return: String representing the action: "defend", "attack", or "do nothing".
-        """
+        
         if not trajectory:
             return "do nothing"
 
@@ -157,7 +168,7 @@ class AirhockeyAI:
 
         # Default to doing nothing
         return "do nothing"
-
+    """
     def visualize_ai_and_trajectory(self,trajectory, defensive_box, mallet_position, table_width = TABLE_WIDTH, table_height = TABLE_HEIGHT,):
         """
         Visualize the puck's predicted trajectory along with the AI's defensive box and mallet position.
@@ -218,10 +229,31 @@ class AirhockeyAI:
 
 ai = AirhockeyAI()
 
+"""
+while true
+positions = []
+pos = get_pos #need to get the position of the puck form the simulation environment 
+positions.append(pos)
+vx,vy = ai.update_puck_position(pos)
+if vx && vy is NUll
+    pos = get_pos #need to get the position of the puck form the simulation environment 
+    positions.append(pos)
+    vx,vy = ai.update_puck_position(pos)
+    
+    
+trajectory = ai.predict_trajectory(vx, vy, positions[-1][0], positions[-1][1])
+intercept_points = ai.calculate_intercept_points(trajectory)
+
+for i, intercept_point in enumerate(intercept_points):
+    post_contact_trajectory = ai.predict_puck_after_contact(intercept_point,vx,vy)
+best_action = ai.decide_best_move(intercept_points)
+print(f"Best Action: {best_action}")
+"""
+
 ## Simulated puck positions for trajectory prediction
 positions = [
-    (100, 605),  # Initial position
-    (70, 600),  # Second position
+    (100, 625),  # Initial position
+    (110, 600),  # Second position
 ]
 
 # Step 1: Update puck position and calculate velocity
