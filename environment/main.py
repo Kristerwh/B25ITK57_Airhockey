@@ -50,7 +50,7 @@ def main():
             mouse_x, mouse_y = glfw.get_cursor_pos(physics.window)
             win_width, win_height = glfw.get_window_size(physics.window)
 
-            normalized_x = (mouse_y / win_height) * 2.3 - 1.15
+            normalized_x = (mouse_y / win_height) * 1.3 - 1.10
             normalized_y = (mouse_x / win_width) * 1.1 - 0.55
 
             clamped_x = max(-1.15, min(1.15, normalized_x))

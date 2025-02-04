@@ -52,7 +52,7 @@ class Puck:
         friction = self.get_friction()
         dof_address = self.physics.model.body_dofadr[self.body_id]
         velocity = self.physics.data.qvel[dof_address:dof_address + 2]
-        friction_factor = np.clip(1 - friction, 0.8, 1)
+        friction_factor = np.clip(1 - friction, 1.01, 2)
         self.physics.data.qvel[dof_address:dof_address + 2] *= friction_factor
 
     def check_collision(self, other_body_name):
@@ -66,14 +66,14 @@ class Puck:
         for wall in ["wall_left", "wall_right", "wall_top", "wall_bottom"]:
             if self.physics.check_collision(self.body_name, wall):
                 dof_address = self.physics.model.body_dofadr[self.body_id]
-                velocity = self.physics.data.qvel[dof_address:dof_address + 2]
+                velocity = self.physics.data.qvel[dof_address:dof_address + 1.0]
 
                 if "left" in wall or "right" in wall:
                     velocity[0] = -velocity[0] * elasticity
                 elif "top" in wall or "bottom" in wall:
                     velocity[1] = -velocity[1] * elasticity
 
-                self.physics.data.qvel[dof_address:dof_address + 2] = velocity
+                self.physics.data.qvel[dof_address:dof_address + 1.0] = velocity
 
     def handle_paddle_collisions(self, paddle_name):
         if self.physics.check_collision(paddle_name):
@@ -83,5 +83,5 @@ class Puck:
             collision_vector = puck_pos - paddle_pos
             if np.linalg.norm(collision_vector) != 0:
                 collision_vector /= np.linalg.norm(collision_vector)
-            self.apply_impulse(collision_vector * 0.1)
+            self.apply_impulse(collision_vector * 1.5)
 
