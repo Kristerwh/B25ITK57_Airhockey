@@ -73,43 +73,32 @@ class AirHockeyAI:
         return (contact_x, contact_y)
 
 
-    def compute_bounce_angle(self, puck_pos, mallet_pos):
-        """
-        Compute the correct bounce angle of the puck after hitting a round mallet.
-        """
-        #compute impact point
-        impact_point = self.compute_contact_point(puck_pos, mallet_pos)
-
-        # Compute the normal vector (from mallet center to impact point)
-        normal_x = impact_point[0] - mallet_pos[0]
-        normal_y = impact_point[1] - mallet_pos[1]
-
-        # Normalize the normal vector to avoid zero division
-        normal_mag = math.sqrt(normal_x**2 + normal_y**2) + 1e-6  # Add small epsilon
+    def compute_bounce_angle(puck_pos, mallet_pos, puck_velocity):
+        # Compute normal vector (direction from mallet to puck)
+        normal_x = puck_pos[0] - mallet_pos[0]
+        normal_y = puck_pos[1] - mallet_pos[1]
+        
+        # Normalize the normal vector
+        normal_mag = math.sqrt(normal_x ** 2 + normal_y ** 2) + 1e-6  # Avoid zero division
         normal_x /= normal_mag
         normal_y /= normal_mag
 
-        # Compute the puck's incoming direction (from puck center to impact point)
-        incoming_x = impact_point[0] - puck_pos[0]
-        incoming_y = impact_point[1] - puck_pos[1]
+        # Incoming velocity
+        vx, vy = puck_velocity
 
-        # Normalize the incoming vector
-        incoming_mag = math.sqrt(incoming_x**2 + incoming_y**2) + 1e-6  # Add small epsilon
-        incoming_x /= incoming_mag
-        incoming_y /= incoming_mag
+        # Compute dot product of velocity and normal
+        dot_product = vx * normal_x + vy * normal_y
 
-        # Compute reflection using the formula: R = I - 2 * (I • N) * N
-        dot_product = incoming_x * normal_x + incoming_y * normal_y  # (I • N)
+        # Compute reflected velocity using the elastic collision equation
+        new_vx = vx - 2 * dot_product * normal_x
+        new_vy = vy - 2 * dot_product * normal_y
 
-        reflected_x = incoming_x - 2 * dot_product * normal_x
-        reflected_y = incoming_y - 2 * dot_product * normal_y
+        # Compute new angle in degrees
+        new_angle = math.degrees(math.atan2(new_vy, new_vx))
 
-        # Compute the new bounce angle using atan2 (correct quadrant handling)
-        new_bounce_angle = math.degrees(math.atan2(reflected_y, reflected_x))
+        print(f"🔄 Corrected bounce angle: {new_angle:.2f}°")
 
-        print(f"🔄 Corrected bounce angle (direction fixed): {new_bounce_angle:.2f}°")
-
-        return new_bounce_angle
+        return new_angle
 
 
 
