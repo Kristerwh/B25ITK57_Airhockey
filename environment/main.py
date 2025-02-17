@@ -1,91 +1,78 @@
-import glfw
-from constraints import Constraints
-from position_control_wrapper import PositionControl
-from challenge_core import ChallengeCore
 import mujoco
 import mujoco.viewer
-from environment.physics_mujoco import MuJoCoPhysics
-from environment.player import Player
+import os
+import numpy as np
+from environment.env_settings.environments.position_control_wrapper import PositionControl
+from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 
+env = AirHockeyBase()
 
-class PlaceholderMDP:
-    def __init__(self):
-        self.model = mujoco.MjModel.from_xml_path("airhockey_table.xml")
-        self.data = mujoco.MjData(self.model)
-        self.info = self
-        self.dt = 0.02
+env_info = env.env_info
 
-    def reset(self):
-        mujoco.mj_resetData(self.model, self.data)
-        return None
+n_agents = env_info.get("n_agents", 1)
 
-    def step(self, action):
-        mujoco.mj_step(self.model, self.data)
-        return None, 0, False, {}
+env_info["actuator_joint_ids"] = env_info.get("actuator_joint_ids", [6, 7, 8, 9, 10, 11, 12])
+env_info["_timestep"] = env_info.get("dt", 0.02)
 
-    def render(self, viewer):
+script_dir = os.path.dirname(os.path.abspath(__file__))
+xml_path = os.path.join(script_dir, "env_settings", "environments", "data", "table.xml")
+
+model = mujoco.MjModel.from_xml_path(xml_path)
+data = mujoco.MjData(model)
+
+scene = mujoco.MjvScene(model, maxgeom=1000)
+perturb = mujoco.MjvPerturb()
+mujoco.mjv_defaultPerturb(perturb)
+
+camera = mujoco.MjvCamera()
+mujoco.mjv_defaultCamera(camera)
+
+option = mujoco.MjvOption()
+option.flags[mujoco.mjtVisFlag.mjVIS_COM] = False
+option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
+
+p_gain, d_gain, i_gain = 10.0, 1.0, 0.1
+controller = PositionControl(p_gain, d_gain, i_gain, env_info=env_info)
+
+paddle_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "paddle_left")
+puck_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "puck")
+
+with mujoco.viewer.launch_passive(model, data) as viewer:
+
+    while viewer.is_running():
+        #paddle and puck positions, we won't need these when we add AI hands
+        paddle_pos = data.qpos[paddle_id * 7: (paddle_id + 1) * 7]
+        puck_pos = data.qpos[puck_id * 7: (puck_id + 1) * 7]
+
+        obs = data.qpos[:]
+        action = np.zeros((20, 3, controller.n_robot_joints))
+        valid_joint_ids = [idx for idx in controller.actuator_joint_ids if idx < len(data.qpos)]
+        valid_robot_joint_ids = [idx for idx in controller.actuator_joint_ids if idx < len(data.qpos) and idx < len(data.qvel)]
+        cur_pos = np.zeros(len(controller.actuator_joint_ids))
+        for i, idx in enumerate(valid_robot_joint_ids):
+            if idx < len(data.qpos):
+                cur_pos[i] = data.qpos[idx]
+        cur_vel = np.zeros(len(controller.actuator_joint_ids))
+        for i, idx in enumerate(valid_robot_joint_ids):
+            if idx < len(data.qvel):
+                cur_vel[i] = data.qvel[idx]
+
+        #Temporary placeholders for desired trajectory we can replace with real trajectory computation later
+        desired_pos = cur_pos
+        desired_vel = cur_vel
+        desired_acc = np.zeros_like(cur_pos)
+
+        control_action = controller._controller(desired_pos, desired_vel, desired_acc, cur_pos, cur_vel)
+        if control_action.shape != data.ctrl.shape:
+            control_action = np.pad(control_action, (0, max(0, data.ctrl.shape[0] - control_action.shape[0])))
+
+        if control_action.shape[0] > data.ctrl.shape[0]:
+            control_action = control_action[:data.ctrl.shape[0]]
+        elif control_action.shape[0] < data.ctrl.shape[0]:
+            control_action = np.pad(control_action,(0, data.ctrl.shape[0] - control_action.shape[0]))
+
+        data.ctrl[:] = 0
+
+        mujoco.mj_step(model, data)
+        mujoco.mjv_updateScene(model, data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL, scene)
         viewer.sync()
-
-mouse_x, mouse_y = 0, 0
-
-def move_paddle_with_mouse(model, data, action, reldx, reldy, scene, perturb):
-    mujoco.mjv_movePerturb(model, data, action, reldx, reldy, scene, perturb)
-
-def main():
-    physics = MuJoCoPhysics("airhockey_table.xml")
-    viewer = mujoco.viewer.launch_passive(physics.physics, physics.data)
-
-    scene = mujoco.MjvScene(physics.physics, maxgeom=1000)
-    perturb = mujoco.MjvPerturb()
-    mujoco.mjv_defaultPerturb(perturb)
-
-    camera = mujoco.MjvCamera()
-    mujoco.mjv_defaultCamera(camera)
-
-    option = mujoco.MjvOption()
-    option.flags[mujoco.mjtVisFlag.mjVIS_COM] = False
-    option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
-
-    mujoco.mjv_updateScene(physics.physics, physics.data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL,scene)
-
-    mdp = PlaceholderMDP()
-
-    player1 = Player(physics, "paddle1")
-    player2 = Player(physics, "paddle2")
-
-    game = ChallengeCore(agent=None, mdp=mdp)
-
-    while True:
-        while True:
-            move_paddle_with_mouse(physics.physics, physics.data, mujoco.mjtMouse.mjMOUSE_MOVE_H, 0.01, 0.01, scene,perturb)
-            mujoco.mjv_applyPerturbPose(physics.physics, physics.data, perturb, 1)
-            mujoco.mj_step(physics.physics, physics.data)
-            mujoco.mjv_updateScene(physics.physics, physics.data, mujoco.MjvOption(), None, camera,mujoco.mjtCatBit.mjCAT_ALL, scene)
-            viewer.sync()
-
-            #puck collision
-            puck_pos = physics.get_position("puck")
-            if puck_pos is not None:
-                puck_pos = Constraints.enforce_table_bounds(puck_pos)
-                physics.set_position("puck", puck_pos)
-
-            #Apply physics constraints (friction, bounce, speed limit)
-            puck_velocity = physics.get_velocity("puck")
-            puck_velocity = Constraints.apply_physics_constraints(puck_velocity)
-            physics.set_velocity("puck", puck_velocity)
-
-            #paddle range, cant go beyond middle
-            paddle1_pos = physics.get_position("paddle1")
-            paddle1_pos = Constraints.enforce_paddle_bounds(paddle1_pos, "left")
-            physics.set_position("paddle1", paddle1_pos)
-
-            paddle2_pos = physics.get_position("paddle2")
-            paddle2_pos = Constraints.enforce_paddle_bounds(paddle2_pos, "right")
-            physics.set_position("paddle2", paddle2_pos)
-
-            mujoco.mjv_applyPerturbPose(physics.physics, physics.data, perturb, 1)
-            mujoco.mj_step(physics.physics, physics.data)
-            viewer.sync()
-
-if __name__ == "__main__":
-    main()
