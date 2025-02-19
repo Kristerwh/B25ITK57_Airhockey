@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 class AirHockeyAI:
     def __init__(self, table_width=500, table_height=1500, goal_width=200, 
-                 mallet_speed=500, mallet_radius=30, puck_radius=15, stray_distance=7):
+                 mallet_speed=0.1, mallet_radius=30, puck_radius=15, stray_distance=1):
         """
         Initialize the AI with table dimensions, mallet and puck properties.
         """
@@ -97,7 +97,8 @@ class AirHockeyAI:
         """
         Visualize the puck trajectory, mallet position, intercept positions, and post-impact trajectories.
         """
-        plt.figure(figsize=(6, 12))
+        plt.figure(figsize=(10, 12))
+
         
         # Plot original puck trajectory
         plt.plot(*zip(*puck_trajectory), '-b', label="Puck Trajectory Before Impact")
@@ -121,6 +122,8 @@ class AirHockeyAI:
         plt.title("Air Hockey Simulation with Tiny Stray & Post-Impact Prediction")
         plt.xlabel("X Position (mm)")
         plt.ylabel("Y Position (mm)")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
         plt.show()
 
 
@@ -144,3 +147,5 @@ predicted_paths = [ai.predict_puck_after_contact(ip, vx, vy) for ip in intercept
 
 # Visualize everything
 ai.visualize(trajectory, ai.mallet_position, intercepts, predicted_paths)
+
+
