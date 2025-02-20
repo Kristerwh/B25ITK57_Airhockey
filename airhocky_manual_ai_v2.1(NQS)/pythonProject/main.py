@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 
-MALLET_POS = 250,100
+MALLET_POS = 250,50
 MALLET_SPEED = 1000
 MALLET_SIZE = 10
 PUCK_SIZE = 10
@@ -86,9 +87,15 @@ class AirHockeyAI:
                 return intercept_point,time_to_intercept
 
     def defencive_action(self, trajectory):
+        mallet_pos_tuple = self.mallet_pos #home pos is 250,100 (x,y)
+        mallet_pos = np.array([mallet_pos_tuple[0],mallet_pos_tuple[1]])
+        N = 10
+
         for px,py in trajectory:
             if px > 150 and px < 350 and py < 200:
-                return px,py
+                target = np.array([px,py])
+                mallet_trajectory = [list(mallet_pos + (i / (N - 1)) * (target - mallet_pos)) for i in range(N)]
+                return mallet_trajectory
 
     def aggressiv_action(self, intercept_point, time_to_intercept):
         px, py = intercept_point
@@ -107,8 +114,8 @@ class AirHockeyAI:
 #plotting_functions
 def plot_trajectory(trajectory):
     plt.figure(figsize=(6, 12))
-    plt.plot(*zip(*puck_trajectory), '-b', label="Puck Trajectory")
-    plt.scatter(puck_trajectory[0][0], puck_trajectory[0][1], color='red', label="Starting Point")
+    plt.plot(*zip(*trajectory), '-b', label="Puck Trajectory")
+    plt.scatter(trajectory[0][0], trajectory[0][1], color='red', label="Starting Point")
     plt.xlim(0, TABLE_WIDTH)
     plt.ylim(0, TABLE_HEIGHT)
     plt.show()
@@ -119,7 +126,7 @@ def plot_trajectory(trajectory):
 ai = AirHockeyAI(MALLET_POS,MALLET_SPEED,MALLET_SIZE,PUCK_SIZE,TABLE_WIDTH,TABLE_HEIGHT)
 
 p1 = (40,800)
-p2 = (50,767)
+p2 = (30,767)
 
 ai.update_positions(p1)
 ai.update_positions(p2)
@@ -135,6 +142,7 @@ intercept_point, intercept_time = ai.calculate_intercept_point(puck_trajectory,p
 
 print(intercept_point , intercept_time)
 
-action = ai.defencive_action(puck_trajectory)
-print (action)
+mallet_trajectory = ai.defencive_action(puck_trajectory)
+print (mallet_trajectory)
 
+plot_trajectory(mallet_trajectory)
