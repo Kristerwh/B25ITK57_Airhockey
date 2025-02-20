@@ -264,7 +264,7 @@ for pos in positions:
 trajectory = ai.predict_trajectory(vx, vy, positions[-1][0], positions[-1][1])
 
 ai.visualize_ai_and_trajectory(trajectory, ai.defensive_box, ai.mallet_position)
-
+ 
 input("Press Enter to continue...")
 
 # Step 3: Calculate intercept points
