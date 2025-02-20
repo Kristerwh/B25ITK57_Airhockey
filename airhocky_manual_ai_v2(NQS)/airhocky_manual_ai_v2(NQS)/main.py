@@ -7,7 +7,7 @@ TABLE_WIDTH = 500
 TABLE_HEIGHT = 1500
 CYCLE_TIME = 0.01 #seconds
 PREDICTION_MAX_STEPS = 100
-MALLET_SPEED = 400
+MALLET_SPEED = 500
 GOAL_WIDTH = TABLE_WIDTH * 0.4
 DEFENSE_DEPTH = TABLE_HEIGHT * 0.1
 MALLET_RADIUS = 30
@@ -19,8 +19,8 @@ class AirHockeyAI:
         self.table_height = table_height
         self.last_puck_position = None
         self.current_puck_position = None
-        self.last_mallet_position = None
-        self.current_mallet_position = None
+        self.last_mallet_position = 0, 0
+        self.current_mallet_position = 250, 100
         self.goal_width = goal_width
         self.goal_center = table_width / 2
         self.defense_depth = defense_depth
@@ -32,8 +32,8 @@ class AirHockeyAI:
         self.mallet_speed = mallet_speed
         self.puck_vx = None
         self.puck_vy = None
-        self.mallet_vx = None
-        self.mallet_vy = None
+        self.mallet_vx = 0
+        self.mallet_vy = 0
         self.mallet_radius = mallet_radius
         self.puck_radius = puck_radius
         self.puck_mass = 0.2  # grams
@@ -69,6 +69,7 @@ class AirHockeyAI:
 
         self.last_mallet_position = self.current_mallet_position
         self.current_mallet_position = new_position
+        print(self.current_mallet_position)
 
         if self.last_mallet_position is not None:
             dx = self.current_mallet_position[0] - self.last_mallet_position[0]
@@ -113,6 +114,7 @@ class AirHockeyAI:
         dx = mallet_x - puck_x
         dy = mallet_y - puck_y
         dist = math.sqrt(dx**2 + dy**2)
+        print("test")
 
         # **Step 1: Check if collision occurs (distance is less than sum of radii)**
         if dist < (self.puck_radius + self.mallet_radius):
@@ -136,15 +138,10 @@ class AirHockeyAI:
             # self.mallet_vx = mallet_vx_rot_final * cos_a - mallet_vy_rot * sin_a
             # self.mallet_vy = mallet_vy_rot * cos_a + mallet_vx_rot_final * sin_a
             print(f"🎯 Collision occurred! New Puck Velocity: ({self.puck_vx:.2f}, {self.puck_vy:.2f})")
-
-    def predict_puck_after_contact(self, intercept_point, vx, vy):
-        """
-        Predict the puck's trajectory after the mallet makes contact at the intercept point.
-        """
-        # Assuming a simple reflection of the puck's trajectory
-        ix, iy = intercept_point
-        #vx, vy = self.update_puck_position(intercept_point)  # Current puck velocity
-        return self.predict_trajectory(vx, -vy, ix, iy)
+            new_trajectory = self.predict_trajectory(self.puck_vx, self.puck_vy, puck_x, puck_y)
+            # Update puck position after the collision
+            print(new_trajectory)
+            return new_trajectory
 
     def calculate_intercept_points(self, puck_trajectory):
         """
@@ -154,34 +151,33 @@ class AirHockeyAI:
         intercept_points = []
 
         for step, (px, py) in enumerate(puck_trajectory):
+            print("oy")
             # Distance from the mallet to the intercept point
-            dx = px - self.mallet_position[0]
-            dy = py - self.mallet_position[1]
+            dx = px - self.current_mallet_position[0]
+            dy = py - self.current_mallet_position[1]
             dist = math.sqrt(dx**2 + dy**2)
-
-            # Calculate time required for the mallet to reach this point
-            time_to_reach = dist / self.mallet_speed
-
+            time_to_reach = abs(py - self.mallet_position[1]) / self.mallet_speed
             # Check if the mallet can reach in time AND if a valid collision would occur
-            if time_to_reach <= step * CYCLE_TIME and dist > (self.puck_radius + self.mallet_radius):
-                # **Move the mallet towards the intercept point but stop at valid collision distance**
-                new_mallet_x = self.mallet_position[0] + (dx / dist) * (dist - (self.puck_radius + self.mallet_radius))
-                new_mallet_y = self.mallet_position[1] + (dy / dist) * (dist - (self.puck_radius + self.mallet_radius))
-
-                # Update the mallet's position **towards** the intercept point without overlapping
-                self.update_mallet_position((new_mallet_x, new_mallet_y))
-
-                # **Simulate a collision when the mallet reaches the adjusted position**
-                self.handle_collision(px, py, new_mallet_x, new_mallet_y)
-
-                # **After the collision, update the puck's trajectory with new velocity**
-                new_trajectory = self.predict_puck_after_contact((px, py), self.puck_vx, self.puck_vy)
-
-                return intercept_points, new_trajectory  # Return first valid intercept
-
+            if dist <= (self.puck_radius + self.mallet_radius) and time_to_reach <= step * 0.01:
+                print("win")
+                intercept_points.append(px)
+                intercept_points.append(py)
+                return puck_trajectory, intercept_points  # Return first valid intercept
+        print("oof")
         return intercept_points, puck_trajectory  # If no collision happens, return original trajectory
 
-
+    def calculate_collision_trajectory(self, trajectory, intercept):
+        # **Move the mallet towards the intercept point but stop at valid collision distance**
+                new_mallet_x, new_mallet_y = intercept
+                self.update_mallet_position((new_mallet_x, new_mallet_y))
+                for step, (px, py) in enumerate(trajectory):
+                    dx = px - self.mallet_position[0]
+                    dy = py - self.mallet_position[1]
+                    dist = math.sqrt(dx**2 + dy**2)
+                    if dist <= (self.puck_radius + self.mallet_radius):
+                        # **Simulate a collision when the mallet reaches the adjusted position**
+                        new_trajectory = self.handle_collision(px, py, new_mallet_x, new_mallet_y)
+                        return new_trajectory
 
     def visualize_ai_and_trajectory(self,trajectory, col_trajectory, defensive_box, mallet_position, table_width = TABLE_WIDTH, table_height = TABLE_HEIGHT,):
         """
@@ -205,7 +201,7 @@ class AirHockeyAI:
         plt.plot(x1_coords, y1_coords, label="Puck Trajectory1", color="red", marker="o", markersize=3)
 
         if trajectory:
-            plt.scatter(trajectory[0][0], trajectory[0][1], color="red", label="Starting Point", zorder=5, s=50)
+            plt.scatter(trajectory[0][0], trajectory[0][1], color="red", label="Starting Point", zorder=5, s=(self.puck_radius * 2))
 
         box_x_min, box_y_min = defensive_box[0]
         box_x_max, box_y_max = defensive_box[1]
@@ -214,7 +210,7 @@ class AirHockeyAI:
                           edgecolor="green", facecolor="none", linewidth=2, label="Defensive Box")
         )
 
-        plt.scatter(mallet_position[0], mallet_position[1], color="orange", label="Mallet Position", zorder=5, s=100)
+        plt.scatter(self.current_mallet_position[0], self.current_mallet_position[1], color="orange", label="Mallet Position", zorder=5, s=(self.mallet_radius * 2))
 
         # Draw the table boundaries
         plt.axhline(0, color="black", linestyle="--")  # Bottom boundary
@@ -235,8 +231,8 @@ class AirHockeyAI:
 ai = AirHockeyAI()
 ## Simulated puck positions for trajectory prediction
 positions = [
-    (100, 625),  # Initial position
-    (110, 600),  # Second position
+    (200, 1225),  # Initial position
+    (random.uniform(150, 250), 1200),  # Second position
 ]
 
 # Step 1: Update puck position and calculate velocity
@@ -245,6 +241,7 @@ for pos in positions:
 
 trajectory = ai.predict_trajectory(vx, vy, positions[-1][0], positions[-1][1])
 
-intercept, new_trajectory = ai.calculate_intercept_points(trajectory)
+trajectory, intercept = ai.calculate_intercept_points(trajectory)
+new_trajectory = ai.calculate_collision_trajectory(trajectory, intercept)
 
-ai.visualize_ai_and_trajectory(trajectory, new_trajectory, ai.defensive_box, ai.mallet_position)
+ai.visualize_ai_and_trajectory(trajectory, new_trajectory, ai.defensive_box, ai.current_mallet_position)
