@@ -12,6 +12,8 @@ TABLE_HEIGHT = 1500
 TIME_STEP = 0.01 #100hz
 TRAJECTORY_TIME_FRAME = 0.2 #how long to predict the puck trajectory for in seconds
 ATTACK_SPREAD = 30
+MOVE_HOME_TICKS = 5
+DEFENSIVE_ACTION_TICKS = 5
 
 
 
@@ -43,12 +45,11 @@ class AirHockeyAI:
         return self.mallet_pos
 
 
-    def move_mallet_home(self): #TODO: implement a way determine if its safe to move home
+    def move_mallet_home(self):
         mallet_pos = np.array([self.mallet_pos[0], self.mallet_pos[1]])
         target = np.array([MALLET_POS[0], MALLET_POS[1]])
-        N = 10 #how many ticks to move home
 
-        mallet_trajectory = [list(mallet_pos + (i / (N - 1)) * (target - mallet_pos)) for i in range(N)]
+        mallet_trajectory = [list(mallet_pos + (i / (MOVE_HOME_TICKS - 1)) * (target - mallet_pos)) for i in range(MOVE_HOME_TICKS)]
 
         self.mallet_pos = MALLET_POS[0],MALLET_POS[1]
         return mallet_trajectory
@@ -110,20 +111,19 @@ class AirHockeyAI:
         return None,None
 
 
-    def defencive_action(self, trajectory):
+    def defensive_action(self, trajectory):
         mallet_pos_tuple = self.mallet_pos #home pos is 250,100 (x,y)
         mallet_pos = np.array([mallet_pos_tuple[0],mallet_pos_tuple[1]])
-        N = 5
 
         for px,py in trajectory:
             if px > 150 and px < 350 and py < 200:
                 target = np.array([px,py])
                 self.mallet_pos = px, py
-                mallet_trajectory = [list(mallet_pos + (i / (N - 1)) * (target - mallet_pos)) for i in range(N)]
+                mallet_trajectory = [list(mallet_pos + (i / (DEFENSIVE_ACTION_TICKS - 1)) * (target - mallet_pos)) for i in range(DEFENSIVE_ACTION_TICKS)]
                 return mallet_trajectory
 
 
-    def aggressiv_action(self, intercept_point, time_to_intercept): #TODO: finish
+    def aggressive_action(self, intercept_point, time_to_intercept):
         px, py = intercept_point
         mallet_pos_tuple = self.mallet_pos  # home pos is 250,100 (x,y)
         mallet_pos = np.array([mallet_pos_tuple[0], mallet_pos_tuple[1]])
@@ -174,34 +174,31 @@ def run(new_pos):
 
         if intercept_point is None:
             print("No intercept point")
+            if ai.check_safe_to_move_home():
+                mallet_trajectory = ai.move_mallet_home()
+                print("Moving Home")
+                return mallet_trajectory
             return [ai.get_mallet_pos()]
 
         print("Time to intercept", time_to_intercept)
-
-        if ai.check_safe_to_move_home():
-            mallet_trajectory = ai.move_mallet_home()
-            print("Moving Home")
+        if time_to_intercept < 0.1:
+            mallet_trajectory = ai.defensive_action(trajectory)
+            print("Defencive Action")
         else:
-            if time_to_intercept < 0.1:
-                mallet_trajectory = ai.defencive_action(trajectory)
-                print("Defencive Action")
-            else:
-                mallet_trajectory = ai.aggressiv_action(intercept_point, time_to_intercept)
-                print("Aggressive Action")
+            mallet_trajectory = ai.aggressive_action(intercept_point, time_to_intercept)
+            print("Aggressive Action")
 
         return mallet_trajectory
 
+
+#testing
 ai = startup()
 
 p1 = (400,700)
-p2 = (370,680)
-
+p2 = (380,720)
 
 run(p1)
-mallet = run(p2)
+mallet_trajectory = run(p2)
 
-print(mallet)
-plot_trajectory(mallet)
-
-
-
+print(mallet_trajectory)
+plot_trajectory(mallet_trajectory)

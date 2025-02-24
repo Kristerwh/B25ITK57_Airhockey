@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="710b08f6-b4e9-4656-9e82-365d69cb3789" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../airhocky_manual_ai_v3(SS)/.idea/airhocky_manual_ai_v3(SS).iml" beforeDir="false" afterPath="$PROJECT_DIR$/../airhocky_manual_ai_v3(SS)/.idea/airhocky_manual_ai_v3(SS).iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../airhocky_manual_ai_v3(SS)/pythonProject/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../airhocky_manual_ai_v3(SS)/pythonProject/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -84,7 +83,7 @@
       <option name="presentableId" value="Default" />
       <updated>1740057470491</updated>
       <workItem from="1740057471524" duration="7101000" />
-      <workItem from="1740397929085" duration="5831000" />
+      <workItem from="1740397929085" duration="6768000" />
     </task>
     <servers />
   </component>
@@ -92,6 +91,6 @@
     <option name="version" value="3" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/airhocky_manual_ai_v2_1_NQS_$main.coverage" NAME="main Coverage Results" MODIFIED="1740403794584" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../airhocky_manual_ai_v3(SS)/pythonProject" />
+    <SUITE FILE_PATH="coverage/airhocky_manual_ai_v2_1_NQS_$main.coverage" NAME="main Coverage Results" MODIFIED="1740404738105" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../airhocky_manual_ai_v3(SS)/pythonProject" />
   </component>
 </project>
