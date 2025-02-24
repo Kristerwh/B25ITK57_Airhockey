@@ -86,8 +86,8 @@ class AirHockeyBase(MuJoCo):
             
             additional_data += [("mallet_x_pos", "mallet_x", ObservationType.JOINT_POS),
                                 ("mallet_y_pos", "mallet_y", ObservationType.JOINT_POS),
-                                ("mallet_x_pos", "mallet_x", ObservationType.JOINT_VEL),
-                                ("mallet_x_pos", "mallet_x", ObservationType.JOINT_VEL),]
+                                ("mallet_x_vel", "mallet_x", ObservationType.JOINT_VEL),
+                                ("mallet_y_vel", "mallet_y", ObservationType.JOINT_VEL),]
             
             collision_spec += [("mallet", ["puck", "table_walls"])]
 
