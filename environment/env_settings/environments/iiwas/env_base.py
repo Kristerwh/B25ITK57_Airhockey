@@ -35,34 +35,24 @@ class AirHockeyBase(MuJoCo):
                             ("puck_y_vel", "puck_y", ObservationType.JOINT_VEL),
                             ("puck_yaw_vel", "puck_yaw", ObservationType.JOINT_VEL)]
 
-        additional_data = [("puck_x_pos", "puck_x", ObservationType.JOINT_POS),
-                           ("puck_y_pos", "puck_y", ObservationType.JOINT_POS),
-                           ("puck_yaw_pos", "puck_yaw", ObservationType.JOINT_POS),
-                           ("puck_x_vel", "puck_x", ObservationType.JOINT_VEL),
-                           ("puck_y_vel", "puck_y", ObservationType.JOINT_VEL),
-                           ("puck_yaw_vel", "puck_yaw", ObservationType.JOINT_VEL)]
+        additional_data = observation_spec.copy()
 
         collision_spec = [("puck", ["puck"]),
                           ("rim", ["rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r", "rim_left", "rim_right"]),
                           ("rim_short_sides", ["rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
-
-        if 1 <= self.n_agents <= 2:
-            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")
-            action_spec += ["mallet_x_vel", "mallet_y_vel"]
-
-            observation_spec += [("puck_x_pos", "puck_x", ObservationType.JOINT_POS),
-                                 ("puck_y_pos", "puck_y", ObservationType.JOINT_POS),
-                                 ("puck_x_vel", "puck_x", ObservationType.JOINT_VEL),
-                                 ("puck_y_vel", "puck_y", ObservationType.JOINT_VEL),]
-            
-            additional_data += [("mallet_x_pos", "mallet_x", ObservationType.JOINT_POS),
-                                ("mallet_y_pos", "mallet_y", ObservationType.JOINT_POS),
-                                ("mallet_x_vel", "mallet_x", ObservationType.JOINT_VEL),
-                                ("mallet_y_vel", "mallet_y", ObservationType.JOINT_VEL),]
-            
-            collision_spec += [("mallet", ["puck", "table_walls"])]
-        else:
+        
+        if self.n_agents != 1:
             raise ValueError('n_agents should be 1')
+
+        scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")
+        action_spec += ["mallet_x_vel", "mallet_y_vel"]
+        
+        additional_data += [("mallet_x_pos", "mallet_x", ObservationType.JOINT_POS),
+                            ("mallet_y_pos", "mallet_y", ObservationType.JOINT_POS),
+                            ("mallet_x_vel", "mallet_x", ObservationType.JOINT_VEL),
+                            ("mallet_y_vel", "mallet_y", ObservationType.JOINT_VEL),]
+        
+        collision_spec += [("mallet", ["puck", "table_walls"])]
 
         self.env_info = dict()
         self.env_info['table'] = {"length": 1.948, "width": 1.038, "goal_width": 0.25}
