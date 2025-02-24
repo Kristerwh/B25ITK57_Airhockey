@@ -8,7 +8,7 @@
         </body>
     </worldbody>
     <actuator>
-        <velocity joint="mallet_x"/>
-        <velocity joint="mallet_y"/>
+        <motor name="mallet_x_motor" joint="mallet_x" gear="1"/>
+        <motor name="mallet_y_motor" joint="mallet_y" gear="1"/>
     </actuator>
 </mujoco>
