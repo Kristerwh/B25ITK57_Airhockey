@@ -49,77 +49,86 @@ class AirHockeyBase(MuJoCo):
         if 1 <= self.n_agents <= 2:
             scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")
 
-            action_spec += ["iiwa_1/joint_1", "iiwa_1/joint_2", "iiwa_1/joint_3", "iiwa_1/joint_4", "iiwa_1/joint_5",
-                            "iiwa_1/joint_6", "iiwa_1/joint_7"]
+            # We are not using robot arms, therefore there is no need to keep it in
 
-            observation_spec += [("robot_1/joint_1_pos", "iiwa_1/joint_1", ObservationType.JOINT_POS),
-                                 ("robot_1/joint_2_pos", "iiwa_1/joint_2", ObservationType.JOINT_POS),
-                                 ("robot_1/joint_3_pos", "iiwa_1/joint_3", ObservationType.JOINT_POS),
-                                 ("robot_1/joint_4_pos", "iiwa_1/joint_4", ObservationType.JOINT_POS),
-                                 ("robot_1/joint_5_pos", "iiwa_1/joint_5", ObservationType.JOINT_POS),
-                                 ("robot_1/joint_6_pos", "iiwa_1/joint_6", ObservationType.JOINT_POS),
-                                 ("robot_1/joint_7_pos", "iiwa_1/joint_7", ObservationType.JOINT_POS),
-                                 ("robot_1/joint_1_vel", "iiwa_1/joint_1", ObservationType.JOINT_VEL),
-                                 ("robot_1/joint_2_vel", "iiwa_1/joint_2", ObservationType.JOINT_VEL),
-                                 ("robot_1/joint_3_vel", "iiwa_1/joint_3", ObservationType.JOINT_VEL),
-                                 ("robot_1/joint_4_vel", "iiwa_1/joint_4", ObservationType.JOINT_VEL),
-                                 ("robot_1/joint_5_vel", "iiwa_1/joint_5", ObservationType.JOINT_VEL),
-                                 ("robot_1/joint_6_vel", "iiwa_1/joint_6", ObservationType.JOINT_VEL),
-                                 ("robot_1/joint_7_vel", "iiwa_1/joint_7", ObservationType.JOINT_VEL)]
+            # action_spec += ["iiwa_1/joint_1", "iiwa_1/joint_2", "iiwa_1/joint_3", "iiwa_1/joint_4", "iiwa_1/joint_5",
+            #                 "iiwa_1/joint_6", "iiwa_1/joint_7"]
+            # observation_spec += [("robot_1/joint_1_pos", "iiwa_1/joint_1", ObservationType.JOINT_POS),
+            #                      ("robot_1/joint_2_pos", "iiwa_1/joint_2", ObservationType.JOINT_POS),
+            #                      ("robot_1/joint_3_pos", "iiwa_1/joint_3", ObservationType.JOINT_POS),
+            #                      ("robot_1/joint_4_pos", "iiwa_1/joint_4", ObservationType.JOINT_POS),
+            #                      ("robot_1/joint_5_pos", "iiwa_1/joint_5", ObservationType.JOINT_POS),
+            #                      ("robot_1/joint_6_pos", "iiwa_1/joint_6", ObservationType.JOINT_POS),
+            #                      ("robot_1/joint_7_pos", "iiwa_1/joint_7", ObservationType.JOINT_POS),
+            #                      ("robot_1/joint_1_vel", "iiwa_1/joint_1", ObservationType.JOINT_VEL),
+            #                      ("robot_1/joint_2_vel", "iiwa_1/joint_2", ObservationType.JOINT_VEL),
+            #                      ("robot_1/joint_3_vel", "iiwa_1/joint_3", ObservationType.JOINT_VEL),
+            #                      ("robot_1/joint_4_vel", "iiwa_1/joint_4", ObservationType.JOINT_VEL),
+            #                      ("robot_1/joint_5_vel", "iiwa_1/joint_5", ObservationType.JOINT_VEL),
+            #                      ("robot_1/joint_6_vel", "iiwa_1/joint_6", ObservationType.JOINT_VEL),
+            #                      ("robot_1/joint_7_vel", "iiwa_1/joint_7", ObservationType.JOINT_VEL)]
+            # additional_data += [("robot_1/joint_8_pos", "iiwa_1/striker_joint_1", ObservationType.JOINT_POS),
+            #                     ("robot_1/joint_9_pos", "iiwa_1/striker_joint_2", ObservationType.JOINT_POS),
+            #                     ("robot_1/joint_8_vel", "iiwa_1/striker_joint_1", ObservationType.JOINT_VEL),
+            #                     ("robot_1/joint_9_vel", "iiwa_1/striker_joint_2", ObservationType.JOINT_VEL),
+            #                     ("robot_1/ee_pos", "iiwa_1/striker_mallet", ObservationType.BODY_POS),
+            #                     ("robot_1/ee_vel", "iiwa_1/striker_mallet", ObservationType.BODY_VEL),
+            #                     ("robot_1/rod_rot", "iiwa_1/striker_joint_link", ObservationType.BODY_ROT)]
+            # collision_spec += [("robot_1/ee", ["iiwa_1/ee"])]
+            
+            # OUR VERSION
+            action_spec += ["mallet_x_vel", "mallet_y_vel"]
 
-            additional_data += [("robot_1/joint_8_pos", "iiwa_1/striker_joint_1", ObservationType.JOINT_POS),
-                                ("robot_1/joint_9_pos", "iiwa_1/striker_joint_2", ObservationType.JOINT_POS),
-                                ("robot_1/joint_8_vel", "iiwa_1/striker_joint_1", ObservationType.JOINT_VEL),
-                                ("robot_1/joint_9_vel", "iiwa_1/striker_joint_2", ObservationType.JOINT_VEL),
-                                ("robot_1/ee_pos", "iiwa_1/striker_mallet", ObservationType.BODY_POS),
-                                ("robot_1/ee_vel", "iiwa_1/striker_mallet", ObservationType.BODY_VEL),
-                                ("robot_1/rod_rot", "iiwa_1/striker_joint_link", ObservationType.BODY_ROT)]
+            observation_spec += [("puck_x_pos", "puck_x", ObservationType.JOINT_POS),
+                                 ("puck_y_pos", "puck_y", ObservationType.JOINT_POS),
+                                 ("puck_x_vel", "puck_x", ObservationType.JOINT_VEL),
+                                 ("puck_y_vel", "puck_y", ObservationType.JOINT_VEL),]
+            
+            additional_data += [("mallet_x_pos", "mallet_x", ObservationType.JOINT_POS),
+                                ("mallet_y_pos", "mallet_y", ObservationType.JOINT_POS),
+                                ("mallet_x_vel", "mallet_x", ObservationType.JOINT_VEL),
+                                ("mallet_y_vel", "mallet_y", ObservationType.JOINT_VEL),]
+            
+            collision_spec += [("mallet", ["puck", "table_walls"])]
 
-            collision_spec += [("robot_1/ee", ["iiwa_1/ee"])]
-
-            if self.n_agents == 2:
-                scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "double.xml")
-
-                observation_spec += [("robot_1/opponent_ee_pos", "iiwa_2/striker_joint_link", ObservationType.BODY_POS)]
-
-                action_spec += ["iiwa_2/joint_1", "iiwa_2/joint_2", "iiwa_2/joint_3", "iiwa_2/joint_4",
-                                "iiwa_2/joint_5",
-                                "iiwa_2/joint_6", "iiwa_2/joint_7"]
-
-                observation_spec += [("robot_2/puck_x_pos", "puck_x", ObservationType.JOINT_POS),
-                                     ("robot_2/puck_y_pos", "puck_y", ObservationType.JOINT_POS),
-                                     ("robot_2/puck_yaw_pos", "puck_yaw", ObservationType.JOINT_POS),
-                                     ("robot_2/puck_x_vel", "puck_x", ObservationType.JOINT_VEL),
-                                     ("robot_2/puck_y_vel", "puck_y", ObservationType.JOINT_VEL),
-                                     ("robot_2/puck_yaw_vel", "puck_yaw", ObservationType.JOINT_VEL),
-                                     ("robot_2/joint_1_pos", "iiwa_2/joint_1", ObservationType.JOINT_POS),
-                                     ("robot_2/joint_2_pos", "iiwa_2/joint_2", ObservationType.JOINT_POS),
-                                     ("robot_2/joint_3_pos", "iiwa_2/joint_3", ObservationType.JOINT_POS),
-                                     ("robot_2/joint_4_pos", "iiwa_2/joint_4", ObservationType.JOINT_POS),
-                                     ("robot_2/joint_5_pos", "iiwa_2/joint_5", ObservationType.JOINT_POS),
-                                     ("robot_2/joint_6_pos", "iiwa_2/joint_6", ObservationType.JOINT_POS),
-                                     ("robot_2/joint_7_pos", "iiwa_2/joint_7", ObservationType.JOINT_POS),
-                                     ("robot_2/joint_1_vel", "iiwa_2/joint_1", ObservationType.JOINT_VEL),
-                                     ("robot_2/joint_2_vel", "iiwa_2/joint_2", ObservationType.JOINT_VEL),
-                                     ("robot_2/joint_3_vel", "iiwa_2/joint_3", ObservationType.JOINT_VEL),
-                                     ("robot_2/joint_4_vel", "iiwa_2/joint_4", ObservationType.JOINT_VEL),
-                                     ("robot_2/joint_5_vel", "iiwa_2/joint_5", ObservationType.JOINT_VEL),
-                                     ("robot_2/joint_6_vel", "iiwa_2/joint_6", ObservationType.JOINT_VEL),
-                                     ("robot_2/joint_7_vel", "iiwa_2/joint_7", ObservationType.JOINT_VEL)]
-
-                observation_spec += [("robot_2/opponent_ee_pos", "iiwa_1/striker_joint_link", ObservationType.BODY_POS)]
-
-                additional_data += [("robot_2/joint_8_pos", "iiwa_2/striker_joint_1", ObservationType.JOINT_POS),
-                                    ("robot_2/joint_9_pos", "iiwa_2/striker_joint_2", ObservationType.JOINT_POS),
-                                    ("robot_2/joint_8_vel", "iiwa_2/striker_joint_1", ObservationType.JOINT_VEL),
-                                    ("robot_2/joint_9_vel", "iiwa_2/striker_joint_2", ObservationType.JOINT_VEL),
-                                    ("robot_2/ee_pos", "iiwa_2/striker_mallet", ObservationType.BODY_POS),
-                                    ("robot_2/ee_vel", "iiwa_2/striker_mallet", ObservationType.BODY_VEL),
-                                    ("robot_2/rod_rot", "iiwa_2/striker_joint_link", ObservationType.BODY_ROT)]
-
-                collision_spec += [("robot_2/ee", ["iiwa_2/ee"])]
+            # We do not need a second agent as we will be using Scripted AI for the second player.
+            # if self.n_agents == 2:
+            #     scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "double.xml")
+            #     observation_spec += [("robot_1/opponent_ee_pos", "iiwa_2/striker_joint_link", ObservationType.BODY_POS)]
+            #     action_spec += ["iiwa_2/joint_1", "iiwa_2/joint_2", "iiwa_2/joint_3", "iiwa_2/joint_4",
+            #                     "iiwa_2/joint_5",
+            #                     "iiwa_2/joint_6", "iiwa_2/joint_7"]
+            #     observation_spec += [("robot_2/puck_x_pos", "puck_x", ObservationType.JOINT_POS),
+            #                          ("robot_2/puck_y_pos", "puck_y", ObservationType.JOINT_POS),
+            #                          ("robot_2/puck_yaw_pos", "puck_yaw", ObservationType.JOINT_POS),
+            #                          ("robot_2/puck_x_vel", "puck_x", ObservationType.JOINT_VEL),
+            #                          ("robot_2/puck_y_vel", "puck_y", ObservationType.JOINT_VEL),
+            #                          ("robot_2/puck_yaw_vel", "puck_yaw", ObservationType.JOINT_VEL),
+            #                          ("robot_2/joint_1_pos", "iiwa_2/joint_1", ObservationType.JOINT_POS),
+            #                          ("robot_2/joint_2_pos", "iiwa_2/joint_2", ObservationType.JOINT_POS),
+            #                          ("robot_2/joint_3_pos", "iiwa_2/joint_3", ObservationType.JOINT_POS),
+            #                          ("robot_2/joint_4_pos", "iiwa_2/joint_4", ObservationType.JOINT_POS),
+            #                          ("robot_2/joint_5_pos", "iiwa_2/joint_5", ObservationType.JOINT_POS),
+            #                          ("robot_2/joint_6_pos", "iiwa_2/joint_6", ObservationType.JOINT_POS),
+            #                          ("robot_2/joint_7_pos", "iiwa_2/joint_7", ObservationType.JOINT_POS),
+            #                          ("robot_2/joint_1_vel", "iiwa_2/joint_1", ObservationType.JOINT_VEL),
+            #                          ("robot_2/joint_2_vel", "iiwa_2/joint_2", ObservationType.JOINT_VEL),
+            #                          ("robot_2/joint_3_vel", "iiwa_2/joint_3", ObservationType.JOINT_VEL),
+            #                          ("robot_2/joint_4_vel", "iiwa_2/joint_4", ObservationType.JOINT_VEL),
+            #                          ("robot_2/joint_5_vel", "iiwa_2/joint_5", ObservationType.JOINT_VEL),
+            #                          ("robot_2/joint_6_vel", "iiwa_2/joint_6", ObservationType.JOINT_VEL),
+            #                          ("robot_2/joint_7_vel", "iiwa_2/joint_7", ObservationType.JOINT_VEL)]
+            #     observation_spec += [("robot_2/opponent_ee_pos", "iiwa_1/striker_joint_link", ObservationType.BODY_POS)]
+            #     additional_data += [("robot_2/joint_8_pos", "iiwa_2/striker_joint_1", ObservationType.JOINT_POS),
+            #                         ("robot_2/joint_9_pos", "iiwa_2/striker_joint_2", ObservationType.JOINT_POS),
+            #                         ("robot_2/joint_8_vel", "iiwa_2/striker_joint_1", ObservationType.JOINT_VEL),
+            #                         ("robot_2/joint_9_vel", "iiwa_2/striker_joint_2", ObservationType.JOINT_VEL),
+            #                         ("robot_2/ee_pos", "iiwa_2/striker_mallet", ObservationType.BODY_POS),
+            #                         ("robot_2/ee_vel", "iiwa_2/striker_mallet", ObservationType.BODY_VEL),
+            #                         ("robot_2/rod_rot", "iiwa_2/striker_joint_link", ObservationType.BODY_ROT)]
+            #     collision_spec += [("robot_2/ee", ["iiwa_2/ee"])]
         else:
-            raise ValueError('n_agents should be 1 or 2')
+            raise ValueError('n_agents should be 1')
 
         self.env_info = dict()
         self.env_info['table'] = {"length": 1.948, "width": 1.038, "goal_width": 0.25}
