@@ -1,8 +1,10 @@
 <mujoco model="AirHockeySingle">
 
-    <include file="iiwa1.xml"/>
+    <!--<include file="iiwa1.xml"/>-->
     <include file="../table.xml"/>
-
+    <include file="mallet.xml"/>
+    
+    <!--
     <contact>
         <exclude body1="table_surface" body2="iiwa_1/base"/>
         <exclude body1="table_surface" body2="iiwa_1/link_1"/>
@@ -27,6 +29,13 @@
         <exclude body1="rim" body2="iiwa_1/striker_mallet"/>
 
         <exclude body1="world" body2="iiwa_1/striker_mallet"/>
+    </contact>
+    -->
+
+    <contact>
+        <exclude body1="table_surface" body2="mallet"/>
+        <exclude body1="rim" body2="mallet"/>
+        <exclude body1="world" body2="mallet"/>
     </contact>
 
 </mujoco>

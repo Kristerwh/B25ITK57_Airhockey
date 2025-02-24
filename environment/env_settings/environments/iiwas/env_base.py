@@ -45,7 +45,7 @@ class AirHockeyBase(MuJoCo):
             raise ValueError('n_agents should be 1')
 
         scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")
-        action_spec += ["mallet_x_vel", "mallet_y_vel"]
+        action_spec += ["mallet_x", "mallet_y"]
         
         additional_data += [("mallet_x_pos", "mallet_x", ObservationType.JOINT_POS),
                             ("mallet_y_pos", "mallet_y", ObservationType.JOINT_POS),
