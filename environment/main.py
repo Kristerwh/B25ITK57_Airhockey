@@ -48,9 +48,9 @@ scripted_ai = script.startup()
 with mujoco.viewer.launch_passive(model, data) as viewer:
     while viewer.is_running():
         base_pos = np.array([data.qpos[5], data.qpos[6]])
-        puck_pos = float(data.xpos[puck_id][0]*1000)+1064, float(data.xpos[puck_id][1]*1000)+609
-        # print(f"Puck: {puck_pos}")
-        mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + 1064, float(data.xpos[paddle_id][1] * 1000) + 609
+        puck_pos = float(data.xpos[puck_id][0] * 1000) + (2.128 * 500), float(data.xpos[puck_id][1] * 1000) + (1.218 * 500)
+        print(f"Puck: {puck_pos}")
+        mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + (2.128 * 500), float(data.xpos[paddle_id][1] * 1000) + (1.218 * 500)
         # print(f"Mallet: {mallet_pos_script_ai}")
         puck_vel = np.array([data.qvel[0], data.qvel[1]])
 
