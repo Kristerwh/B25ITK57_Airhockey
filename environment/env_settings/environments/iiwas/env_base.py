@@ -52,7 +52,7 @@ class AirHockeyBase(MuJoCo):
                             ("mallet_x_vel", "mallet_x", ObservationType.JOINT_VEL),
                             ("mallet_y_vel", "mallet_y", ObservationType.JOINT_VEL),]
         
-        collision_spec += [("mallet", ["puck", "table_walls"])]
+        collision_spec += [("mallet", ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
 
         self.env_info = dict()
         self.env_info['table'] = {"length": 1.948, "width": 1.038, "goal_width": 0.25}
