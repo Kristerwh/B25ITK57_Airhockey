@@ -200,11 +200,10 @@ def plot_trajectory(trajectory):
 #main functions
 def startup():
     ai = AirHockeyAI()
-    ai.move_mallet_home()
     return ai
 
 #will only return vx, vy for mallet
-def run(puck_pos, mallet_pos):#TODO handle all actions for every tick
+def run(puck_pos, mallet_pos):
     ai.update_positions(puck_pos)
     ai.set_mallet_pos(mallet_pos)
 
@@ -214,8 +213,6 @@ def run(puck_pos, mallet_pos):#TODO handle all actions for every tick
     mallet_vx = ai.get_mallet_vx()
     mallet_vy = ai.get_mallet_vy()
 
-    if len(ai.puck_positions) <= 1:
-        return 0, 0
 
     if move_home_ticks > 0:
         move_home_ticks -= 1
@@ -238,8 +235,8 @@ def run(puck_pos, mallet_pos):#TODO handle all actions for every tick
             return 0, 0
         return mallet_vx, mallet_vy
 
-
-
+    if len(ai.puck_positions) <= 1:
+        return 0, 0
 
     puck_vel = ai.calculate_velocity()
     trajectory, trajectory_time = ai.puck_trajectory(ai.puck_positions[1], puck_vel)
@@ -251,6 +248,8 @@ def run(puck_pos, mallet_pos):#TODO handle all actions for every tick
             mallet_vx, mallet_vy, ticks = ai.move_mallet_home()
             print("Moving Home")
             ai.set_move_home_ticks(ticks)
+            ai.set_mallet_vx(mallet_vx)
+            ai.set_mallet_vy(mallet_vy)
             return mallet_vx, mallet_vy
         return 0, 0
 
@@ -264,6 +263,8 @@ def run(puck_pos, mallet_pos):#TODO handle all actions for every tick
         ai.set_aggressive_action_ticks(ticks)
         print("Aggressive Action")
 
+    ai.set_mallet_vx(mallet_vx)
+    ai.set_mallet_vy(mallet_vy)
     return mallet_vx, mallet_vy
 
 
