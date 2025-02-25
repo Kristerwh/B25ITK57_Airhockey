@@ -15,7 +15,10 @@
         <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5"
                   reflectance="0.2"/>
 
-         <mesh name="rim" file="table_rim.stl" scale="0.001 0.001 0.001" smoothnormal="true"/>
+        <mesh name="rim" file="table_rim.stl" scale="0.001 0.001 0.001" smoothnormal="true"/>
+
+        <material name="goal_red" specular="0.5" shininess="0.25" rgba="1.0 0.0 0.0 1"/>
+        <material name="goal_blue" specular="0.5" shininess="0.25" rgba="0.0 0.0 1.0 1"/>
     </asset>
 
     <default>
@@ -27,6 +30,10 @@
     </default>
 
     <worldbody>
+        <!--Goal areas, currently red and blue to see if its in correct positions, we can change material to ''transparent'' later-->
+        <site name="goal_left" pos="-1.019 0 0" size="0.01 0.122 0.01" type="box" material="goal_red"/>
+        <site name="goal_right" pos="1.019 0 0" size="0.01 0.122 0.01" type="box" material="goal_blue"/>'
+
         <body name="table">
             <body name="table_surface">
                 <geom name="surface" type="box" material="white" size="1.064 0.609 0.0505" pos="0 0 -0.0505"
