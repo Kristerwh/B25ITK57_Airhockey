@@ -145,7 +145,7 @@ class AirHockeyAI:
 
 
     def move_mallet_home(self):
-        mallet_pos = np.array([self.mallet_pos[0]+100, self.mallet_pos[1]+100])
+        mallet_pos = np.array([self.mallet_pos[0], self.mallet_pos[1]])
         target = np.array([MALLET_POS[0], MALLET_POS[1]])
 
         vx, vy = (target - mallet_pos) / MOVE_HOME_TICKS
