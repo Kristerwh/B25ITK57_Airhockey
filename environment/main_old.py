@@ -56,6 +56,7 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         paddle_pos = data.qpos[paddle_id * 7: (paddle_id + 1) * 7]
         # puck_pos = data.qpos[puck_id * 7: (puck_id + 1) * 7]
         puck_pos = np.array([data.qpos[0], data.qpos[1]])
+        print(puck_pos)
         puck_vel = np.array([data.qvel[0], data.qvel[1]])
         mallet_pos_script_ai = np.array([data.qpos[2], data.qpos[3]])
 

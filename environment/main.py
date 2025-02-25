@@ -9,7 +9,7 @@ import os
 import numpy as np
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
-from airhocky_manual_ai_v3.main import AirHockeyAI
+from airhocky_manual_ai_v31 import main as script
 
 env = AirHockeyBase()
 
@@ -43,26 +43,24 @@ controller = MalletControl(env_info=env_info, debug=True)  # Enable debug if nee
 paddle_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "paddle_left")
 puck_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "puck")
 
-scripted_ai = AirHockeyAI(np.array([data.qpos[2], data.qpos[3]]), 1000, 10, 10, 500, 1000, 0.01, 0.2)
+scripted_ai = script.startup()
 
 with mujoco.viewer.launch_passive(model, data) as viewer:
     while viewer.is_running():
-        puck_pos = np.array([data.qpos[0], data.qpos[1]])
+        base_pos = np.array([data.qpos[5], data.qpos[6]])
+        puck_pos = float(data.xpos[puck_id][0]*1000)+1064, float(data.xpos[puck_id][1]*1000)+609
+        # print(f"Puck: {puck_pos}")
+        mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + 1064, float(data.xpos[paddle_id][1] * 1000) + 609
+        # print(f"Mallet: {mallet_pos_script_ai}")
         puck_vel = np.array([data.qvel[0], data.qvel[1]])
-        mallet_pos_script_ai = np.array([data.qpos[2], data.qpos[3]])
 
-        obs = data.qpos[:]
-        action = np.zeros(2)
-        valid_joint_ids = [0, 1]
-        cur_pos = data.qpos[valid_joint_ids]  # Directly fetch mallet position
-        cur_vel = data.qvel[valid_joint_ids]  # Directly fetch mallet velocity
+        # print(mallet_pos_script_ai)
 
-        desired_pos = cur_pos
-        desired_vel = cur_vel
-        desired_acc = np.zeros_like(cur_pos)
+        ai_velocity = script.run(scripted_ai, puck_pos, mallet_pos_script_ai)
+        print(ai_velocity)
+        # print(f"Action from AI: {ai_velocity}")
 
-        control_action = controller.apply_action(action)
-        control_action = np.array(control_action[:2])  # Only keep first 2 elements
+        control_action = controller.apply_action(ai_velocity)
         data.ctrl[:2] = control_action
 
         mujoco.mj_step(model, data)
