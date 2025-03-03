@@ -63,7 +63,7 @@
             </body>
         </body>
 
-        <body name="base" pos="-0.7 0 0">
+        <body name="base" pos="-0.4 0 0">
             <joint name="puck_x" type="slide" axis="1 0 0" damping="0.001" limited="false"/>
             <joint name="puck_y" type="slide" axis="0 1 0" damping="0.001" limited="false"/>
             <joint name="puck_yaw" type="hinge" axis="0 0 1" damping="2e-6" limited="false"/>
