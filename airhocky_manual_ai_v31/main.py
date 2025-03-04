@@ -172,7 +172,7 @@ class AirHockeyAI:
         mallet_pos = np.array([mallet_pos_tuple[0],mallet_pos_tuple[1]])
 
         for px,py in trajectory:
-            if DEFENSE_BOX_Y[0]-DEFENSIVE_ACTION_BOX_OFFSET < py < DEFENSE_BOX_Y[1]-DEFENSIVE_ACTION_BOX_OFFSET and px < DEFENSE_BOX_X-DEFENSIVE_ACTION_BOX_OFFSET:
+            if DEFENSE_BOX_Y[0]+DEFENSIVE_ACTION_BOX_OFFSET < py < DEFENSE_BOX_Y[1]-DEFENSIVE_ACTION_BOX_OFFSET and px < DEFENSE_BOX_X-DEFENSIVE_ACTION_BOX_OFFSET:
                 target = np.array([px,py])
 
                 vx, vy = (target - mallet_pos) / DEFENSIVE_ACTION_TICKS
@@ -184,7 +184,7 @@ class AirHockeyAI:
         px, py  = self.puck_positions[1]
         if px <= TABLE_WIDTH/2:
             self.no_intercept_ticks += 1
-            print("No intercept ticks", self.no_intercept_ticks)
+            # print("No intercept ticks", self.no_intercept_ticks)
             if self.no_intercept_ticks >= PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS:
                 ticks = PASSIVE_AGGRESSIVE_TICKS
                 self.set_passive_aggressive_action_ticks(ticks + 1)
@@ -192,6 +192,7 @@ class AirHockeyAI:
                 mallet_pos = np.array([mallet_pos_tuple[0], mallet_pos_tuple[1]])
                 target = (px, py)
                 vx, vy = (target - mallet_pos) / ticks
+                #self.set_no_intercept_ticks(0)
                 return vx, vy
         return 0,0
 
@@ -251,15 +252,15 @@ def run(ai, puck_pos, mallet_pos):
 
 
     if passive_aggressive_ticks > 0:
-        print("Passive aggressive ticks" , passive_aggressive_ticks)
+        # print("Passive aggressive ticks" , passive_aggressive_ticks)
         passive_aggressive_ticks -= 1
-        ai.set_passive_aggressive_ticks(passive_aggressive_ticks)
+        ai.set_passive_aggressive_action_ticks(passive_aggressive_ticks)
         if passive_aggressive_ticks == 0:
             return 0, 0
         return mallet_vx, mallet_vy
 
     if move_home_ticks > 0:
-        print("Moving home ticks" , move_home_ticks)
+        # print("Moving home ticks" , move_home_ticks)
         move_home_ticks -= 1
         ai.set_move_home_ticks(move_home_ticks)
         if move_home_ticks == 0:
@@ -267,7 +268,7 @@ def run(ai, puck_pos, mallet_pos):
         return mallet_vx, mallet_vy
 
     if defensive_action_ticks > 0:
-        print("Defensive action ticks" , defensive_action_ticks)
+        # print("Defensive action ticks" , defensive_action_ticks)
         defensive_action_ticks -= 1
         ai.set_defensive_action_ticks(defensive_action_ticks)
         if defensive_action_ticks == 0:
@@ -275,7 +276,7 @@ def run(ai, puck_pos, mallet_pos):
         return mallet_vx, mallet_vy
 
     if aggressive_action_ticks > 0:
-        print("Aggressive action ticks" , aggressive_action_ticks)
+        # print("Aggressive action ticks" , aggressive_action_ticks)
         aggressive_action_ticks -= 1
         ai.set_aggressive_action_ticks(aggressive_action_ticks)
         if aggressive_action_ticks == 0:
@@ -284,7 +285,7 @@ def run(ai, puck_pos, mallet_pos):
 
 
     if len(ai.puck_positions) <= 1:
-        print("not enough puck positions")
+        # print("not enough puck positions")
         return 0, 0
 
     puck_vel = ai.calculate_velocity()
@@ -292,11 +293,11 @@ def run(ai, puck_pos, mallet_pos):
     intercept_point, time_to_intercept  = ai.calculate_intercept_point(trajectory, trajectory_time)
 
     if intercept_point is None:
-        print("No intercept point")
+        # print("No intercept point")
         mallet_vx, mallet_vy = ai.passive_aggressive_action()
         if ai.check_safe_to_move_home() and mallet_vx == 0 and mallet_vy == 0:
             mallet_vx, mallet_vy, ticks = ai.move_mallet_home()
-            print("Moving Home")
+            # print("Moving Home")
             ai.set_move_home_ticks(ticks + 1)
             ai.set_mallet_vx(mallet_vx)
             ai.set_mallet_vy(mallet_vy)
@@ -307,18 +308,18 @@ def run(ai, puck_pos, mallet_pos):
 
 
     else:
-        print("reset no intercept ticks")
+        # print("reset no intercept ticks")
         ai.set_no_intercept_ticks(0)
 
-    print("Time to intercept", time_to_intercept)
+    # print("Time to intercept", time_to_intercept)
     if time_to_intercept < 0.1:
         mallet_vx, mallet_vy, ticks = ai.defensive_action(trajectory)
         ai.set_defensive_action_ticks(ticks + 1)
-        print("Defencive Action")
+        # print("Defencive Action")
     else:
         mallet_vx, mallet_vy, ticks = ai.aggressive_action(intercept_point, time_to_intercept)
         ai.set_aggressive_action_ticks(ticks + 1)
-        print("Aggressive Action")
+        # print("Aggressive Action")
 
     ai.set_mallet_vx(mallet_vx)
     ai.set_mallet_vy(mallet_vy)

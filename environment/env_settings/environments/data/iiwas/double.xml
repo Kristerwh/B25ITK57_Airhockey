@@ -57,9 +57,12 @@
     </contact>
     -->
     <contact>
-        <exclude body1="table_surface" body2="mallet"/>
-        <exclude body1="rim" body2="mallet"/>
-        <exclude body1="world" body2="mallet"/>
+        <exclude body1="table_surface" body2="left_mallet"/>
+        <exclude body1="table_surface" body2="right_mallet"/>
+        <exclude body1="rim" body2="left_mallet"/>
+        <exclude body1="rim" body2="right_mallet"/>
+        <exclude body1="world" body2="left_mallet"/>
+        <exclude body1="world" body2="right_mallet"/>
     </contact>
 
 </mujoco>

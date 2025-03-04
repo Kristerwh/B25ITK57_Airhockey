@@ -22,10 +22,11 @@ class AirHockeyBase(MuJoCo):
             Constructor.
 
             Args:
-                n_agents (int, 1): number of agent to be used in the environment (one or two)
+                n_agents (int): Number of agents (1 or 2)
         """
-
         self.n_agents = n_agents
+        if self.n_agents not in [1, 2]:
+            raise ValueError('n_agents must be either 1 or 2')
 
         action_spec = []
         observation_spec = [("puck_x_pos", "puck_x", ObservationType.JOINT_POS),
@@ -40,19 +41,35 @@ class AirHockeyBase(MuJoCo):
         collision_spec = [("puck", ["puck"]),
                           ("rim", ["rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r", "rim_left", "rim_right"]),
                           ("rim_short_sides", ["rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
-        
-        if self.n_agents != 1:
-            raise ValueError('n_agents should be 1')
 
-        scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")
-        action_spec += ["mallet_x_motor", "mallet_y_motor"]
-        
-        additional_data += [("mallet_x_pos", "mallet_x", ObservationType.JOINT_POS),
-                            ("mallet_y_pos", "mallet_y", ObservationType.JOINT_POS),
-                            ("mallet_x_vel", "mallet_x", ObservationType.JOINT_VEL),
-                            ("mallet_y_vel", "mallet_y", ObservationType.JOINT_VEL),]
-        
-        collision_spec += [("mallet", ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
+        if self.n_agents == 1:
+            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")
+            action_spec += ["left_mallet_x_motor", "left_mallet_y_motor"]
+            additional_data += [("left_mallet_x_pos", "left_mallet_x", ObservationType.JOINT_POS),
+                                ("left_mallet_y_pos", "left_mallet_y", ObservationType.JOINT_POS),
+                                ("left_mallet_x_vel", "left_mallet_x", ObservationType.JOINT_VEL),
+                                ("left_mallet_y_vel", "left_mallet_y", ObservationType.JOINT_VEL), ]
+            collision_spec += [
+                ("left_mallet", ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
+
+        else:  # Two-player mode
+            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "two_player.xml")  # Load updated XML
+            action_spec += ["left_mallet_x_motor", "left_mallet_y_motor",
+                            "right_mallet_x_motor", "right_mallet_y_motor"]
+            additional_data += [("left_mallet_x_pos", "left_mallet_x", ObservationType.JOINT_POS),
+                                ("left_mallet_y_pos", "left_mallet_y", ObservationType.JOINT_POS),
+                                ("left_mallet_x_vel", "left_mallet_x", ObservationType.JOINT_VEL),
+                                ("left_mallet_y_vel", "left_mallet_y", ObservationType.JOINT_VEL),
+                                ("right_mallet_x_pos", "right_mallet_x", ObservationType.JOINT_POS),
+                                ("right_mallet_y_pos", "right_mallet_y", ObservationType.JOINT_POS),
+                                ("right_mallet_x_vel", "right_mallet_x", ObservationType.JOINT_VEL),
+                                ("right_mallet_y_vel", "right_mallet_y", ObservationType.JOINT_VEL)]
+            collision_spec += [("left_mallet",
+                                ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l",
+                                 "rim_away_r"]),
+                               ("right_mallet",
+                                ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l",
+                                 "rim_away_r"])]
 
         self.env_info = dict()
         self.env_info['table'] = {"length": 1.948, "width": 1.038, "goal_width": 0.25}

@@ -15,7 +15,7 @@ env = AirHockeyBase()
 
 env_info = env.env_info
 
-n_agents = env_info.get("n_agents", 1)
+n_agents = env_info.get("n_agents", 2)
 
 env_info["actuator_joint_ids"] = env_info.get("actuator_joint_ids", [6, 7, 8, 9, 10, 11, 12])
 env_info["_timestep"] = env_info.get("dt", 0.02)
@@ -41,27 +41,36 @@ p_gain, d_gain, i_gain = 10.0, 1.0, 0.1
 controller = MalletControl(env_info=env_info, debug=True)  # Enable debug if needed
 
 paddle_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "paddle_left")
+paddle_id2 = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "paddle_right")
 puck_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "puck")
 
 scripted_ai = script.startup()
+scripted_ai2 = script.startup()
 
 with mujoco.viewer.launch_passive(model, data) as viewer:
     while viewer.is_running():
         base_pos = np.array([data.qpos[5], data.qpos[6]])
         puck_pos = float(data.xpos[puck_id][0] * 1000) + 974, float(data.xpos[puck_id][1] * 1000) + 519
+        puck_pos_reverted = 2 * 974 - (float(data.xpos[puck_id][0] * 1000) + 974), 2 * 519 - (float(data.xpos[puck_id][1] * 1000) + 519)
         # print(f"Puck: {puck_pos}")
         mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + 974, float(data.xpos[paddle_id][1] * 1000) + 519
+        mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (float(data.xpos[paddle_id2][1] * 1000) + 519)
         # print(f"Mallet: {mallet_pos_script_ai}")
+        # print(f"Mallet: {mallet2_pos_script_ai}")
         puck_vel = np.array([data.qvel[0], data.qvel[1]])
 
         # print(mallet_pos_script_ai)
 
         ai_velocity = script.run(scripted_ai, puck_pos, mallet_pos_script_ai)
+        ai_velocity2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
+        ai_velocity2 = np.array([-ai_velocity2[0], -ai_velocity2[1]])
+        action = np.concatenate((ai_velocity, ai_velocity2))  # Shape (4,)
         print(ai_velocity)
-        # print(f"Action from AI: {ai_velocity}")
+        print("test")
 
-        control_action = controller.apply_action(ai_velocity)
-        data.ctrl[:2] = control_action
+        control_action = controller.apply_action(action)
+        data.ctrl[:2] = control_action[:2]
+        data.ctrl[2:4] = control_action[2:4]
 
         mujoco.mj_step(model, data)
         mujoco.mjv_updateScene(model, data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL, scene)

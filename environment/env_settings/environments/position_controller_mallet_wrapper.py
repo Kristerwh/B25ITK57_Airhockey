@@ -15,8 +15,9 @@ class MalletControl:
         self.debug = debug
 
         # Define mallet action space
-        self.actuator_joint_ids = ["mallet_x_motor", "mallet_y_motor"]
-        self.prev_vel = np.zeros(len(self.actuator_joint_ids))
+        self.left_mallet_joint_ids = ["left_mallet_x_motor", "left_mallet_y_motor"]
+        self.right_mallet_joint_ids = ["right_mallet_x_motor", "right_mallet_y_motor"]
+        self.prev_vel = np.zeros(len(self.left_mallet_joint_ids) + len(self.right_mallet_joint_ids))
 
         if self.debug:
             self.controller_record = deque(maxlen=1000)
@@ -43,6 +44,6 @@ class MalletControl:
         """
         Reset the mallet control.
         """
-        self.prev_vel = np.zeros(len(self.actuator_joint_ids))
+        self.prev_vel = np.zeros(len(self.left_mallet_joint_ids) + len(self.right_mallet_joint_ids))
         if self.debug:
             self.controller_record.clear()
