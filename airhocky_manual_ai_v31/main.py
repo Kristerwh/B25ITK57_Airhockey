@@ -20,6 +20,7 @@ ATTACK_SPREAD = 15
 MOVE_HOME_TICKS = 5
 DEFENSIVE_ACTION_TICKS = 5
 PASSIVE_AGGRESSIVE_TICKS = 40
+PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS = 4000
 
 
 
@@ -180,12 +181,13 @@ class AirHockeyAI:
         return 0,0,0
 
     def passive_aggressive_action(self):
-        self.no_intercept_ticks += 1
-        print("no intercept ticks", self.no_intercept_ticks)
-        if self.no_intercept_ticks >= 100:
-            px, py  = self.puck_positions[1]
-            if px <= TABLE_WIDTH/2:
+        px, py  = self.puck_positions[1]
+        if px <= TABLE_WIDTH/2:
+            self.no_intercept_ticks += 1
+            print("No intercept ticks", self.no_intercept_ticks)
+            if self.no_intercept_ticks >= PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS:
                 ticks = PASSIVE_AGGRESSIVE_TICKS
+                self.set_passive_aggressive_action_ticks(ticks + 1)
                 mallet_pos_tuple = self.mallet_pos
                 mallet_pos = np.array([mallet_pos_tuple[0], mallet_pos_tuple[1]])
                 target = (px, py)
@@ -292,16 +294,20 @@ def run(ai, puck_pos, mallet_pos):
     if intercept_point is None:
         print("No intercept point")
         mallet_vx, mallet_vy = ai.passive_aggressive_action()
-        if ai.check_safe_to_move_home():
+        if ai.check_safe_to_move_home() and mallet_vx == 0 and mallet_vy == 0:
             mallet_vx, mallet_vy, ticks = ai.move_mallet_home()
             print("Moving Home")
             ai.set_move_home_ticks(ticks + 1)
             ai.set_mallet_vx(mallet_vx)
             ai.set_mallet_vy(mallet_vy)
             return mallet_vx, mallet_vy
+        ai.set_mallet_vx(mallet_vx)
+        ai.set_mallet_vy(mallet_vy)
         return mallet_vx, mallet_vy
 
+
     else:
+        print("reset no intercept ticks")
         ai.set_no_intercept_ticks(0)
 
     print("Time to intercept", time_to_intercept)
