@@ -241,7 +241,7 @@ def run(ai, puck_pos, mallet_pos):
     move_home_ticks = ai.get_move_home_ticks()
     defensive_action_ticks = ai.get_defensive_action_ticks()
     aggressive_action_ticks = ai.get_aggressive_action_ticks()
-    passive_aggressive_ticks = ai.get_passive_aggressive_ticks()
+    passive_aggressive_ticks = ai.get_passive_aggressive_action_ticks()
     mallet_vx = ai.get_mallet_vx()
     mallet_vy = ai.get_mallet_vy()
 
@@ -288,7 +288,7 @@ def run(ai, puck_pos, mallet_pos):
 
     if intercept_point is None:
         print("No intercept point")
-        ai.get_passive_aggressive_action()
+        ai.passive_aggressive_action()
         if ai.check_safe_to_move_home():
             mallet_vx, mallet_vy, ticks = ai.move_mallet_home()
             print("Moving Home")
