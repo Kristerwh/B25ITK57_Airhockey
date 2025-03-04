@@ -181,6 +181,7 @@ class AirHockeyAI:
 
     def passive_aggressive_action(self):
         self.no_intercept_ticks += 1
+        print("no intercept ticks", self.no_intercept_ticks)
         if self.no_intercept_ticks >= 100:
             px, py  = self.puck_positions[1]
             if px <= TABLE_WIDTH/2:
@@ -189,7 +190,8 @@ class AirHockeyAI:
                 mallet_pos = np.array([mallet_pos_tuple[0], mallet_pos_tuple[1]])
                 target = (px, py)
                 vx, vy = (target - mallet_pos) / ticks
-                return vx, vy, ticks
+                return vx, vy
+        return 0,0
 
 
     def aggressive_action(self, intercept_point, time_to_intercept):
@@ -246,6 +248,14 @@ def run(ai, puck_pos, mallet_pos):
     mallet_vy = ai.get_mallet_vy()
 
 
+    if passive_aggressive_ticks > 0:
+        print("Passive aggressive ticks" , passive_aggressive_ticks)
+        passive_aggressive_ticks -= 1
+        ai.set_passive_aggressive_ticks(passive_aggressive_ticks)
+        if passive_aggressive_ticks == 0:
+            return 0, 0
+        return mallet_vx, mallet_vy
+
     if move_home_ticks > 0:
         print("Moving home ticks" , move_home_ticks)
         move_home_ticks -= 1
@@ -270,13 +280,6 @@ def run(ai, puck_pos, mallet_pos):
             return 0, 0
         return mallet_vx, mallet_vy
 
-    if passive_aggressive_ticks > 0:
-        print("Passive aggressive ticks" , passive_aggressive_ticks)
-        passive_aggressive_ticks -= 1
-        ai.set_passive_aggressive_ticks(passive_aggressive_ticks)
-        if passive_aggressive_ticks == 0:
-            return 0, 0
-        return mallet_vx, mallet_vy
 
     if len(ai.puck_positions) <= 1:
         print("not enough puck positions")
@@ -288,7 +291,7 @@ def run(ai, puck_pos, mallet_pos):
 
     if intercept_point is None:
         print("No intercept point")
-        ai.passive_aggressive_action()
+        mallet_vx, mallet_vy = ai.passive_aggressive_action()
         if ai.check_safe_to_move_home():
             mallet_vx, mallet_vy, ticks = ai.move_mallet_home()
             print("Moving Home")
