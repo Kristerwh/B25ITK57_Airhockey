@@ -307,6 +307,7 @@ def run(ai, puck_pos, mallet_pos):
 
 
     else:
+        print("reset no intercept ticks")
         ai.set_no_intercept_ticks(0)
 
     print("Time to intercept", time_to_intercept)
