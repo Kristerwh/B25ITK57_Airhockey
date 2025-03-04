@@ -65,8 +65,9 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         ai_velocity2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
         ai_velocity2 = np.array([-ai_velocity2[0], -ai_velocity2[1]])
         action = np.concatenate((ai_velocity, ai_velocity2))  # Shape (4,)
-        print(ai_velocity)
-        print("test")
+        #print(ai_velocity)
+        #print("test")
+        print("-"*50)
 
         control_action = controller.apply_action(action)
         data.ctrl[:2] = control_action[:2]
