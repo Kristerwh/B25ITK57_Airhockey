@@ -299,7 +299,7 @@ def run(ai, puck_pos, mallet_pos):
             ai.set_mallet_vx(mallet_vx)
             ai.set_mallet_vy(mallet_vy)
             return mallet_vx, mallet_vy
-        return 0, 0
+        return mallet_vx, mallet_vy
 
     else:
         ai.set_no_intercept_ticks(0)
