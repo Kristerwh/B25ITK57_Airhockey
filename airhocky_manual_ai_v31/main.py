@@ -16,7 +16,7 @@ DEFENSE_BOX_Y = (TABLE_HEIGHT/6), ((5 * TABLE_HEIGHT) / 6)
 DEFENSIVE_ACTION_BOX_OFFSET = 50
 TIME_STEP = 0.01 #100hz
 TRAJECTORY_TIME_FRAME = 0.2 #how long to predict the puck trajectory for in seconds
-ATTACK_SPREAD = 30
+ATTACK_SPREAD = 15
 MOVE_HOME_TICKS = 5
 DEFENSIVE_ACTION_TICKS = 5
 
@@ -274,4 +274,4 @@ def run(ai, puck_pos, mallet_pos):
 
     ai.set_mallet_vx(mallet_vx)
     ai.set_mallet_vy(mallet_vy)
-    return mallet_vx, mallet_
+    return mallet_vx, mallet_vy
