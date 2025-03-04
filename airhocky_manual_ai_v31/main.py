@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 
 
@@ -131,7 +132,7 @@ class AirHockeyAI:
         idx = -1
         for px,py in trajectory:
             idx += 1
-            if DEFENSE_BOX_Y[0] < px < DEFENSE_BOX_Y[1] and py < DEFENSE_BOX_X:
+            if DEFENSE_BOX_Y[0] < py < DEFENSE_BOX_Y[1] and px < DEFENSE_BOX_X:
                 intercept_point = (px,py)
                 time_to_intercept = trajectory_time[idx]
                 return intercept_point,time_to_intercept
@@ -158,7 +159,7 @@ class AirHockeyAI:
         mallet_pos = np.array([mallet_pos_tuple[0],mallet_pos_tuple[1]])
 
         for px,py in trajectory:
-            if DEFENSE_BOX_Y[0]-DEFENSIVE_ACTION_BOX_OFFSET < px < DEFENSE_BOX_Y[1]-DEFENSIVE_ACTION_BOX_OFFSET and py < DEFENSE_BOX_X-DEFENSIVE_ACTION_BOX_OFFSET:
+            if DEFENSE_BOX_Y[0]-DEFENSIVE_ACTION_BOX_OFFSET < py < DEFENSE_BOX_Y[1]-DEFENSIVE_ACTION_BOX_OFFSET and px < DEFENSE_BOX_X-DEFENSIVE_ACTION_BOX_OFFSET:
                 target = np.array([px,py])
 
                 vx, vy = (target - mallet_pos) / DEFENSIVE_ACTION_TICKS
@@ -196,6 +197,8 @@ def plot_trajectory(trajectory):
         plt.xlim(0, TABLE_WIDTH)
         plt.ylim(0, TABLE_HEIGHT)
         plt.show()
+
+
 
 
 
@@ -271,5 +274,4 @@ def run(ai, puck_pos, mallet_pos):
 
     ai.set_mallet_vx(mallet_vx)
     ai.set_mallet_vy(mallet_vy)
-    return mallet_vx, mallet_vy
-
+    return mallet_vx, mallet_
