@@ -13,8 +13,8 @@ MALLET_POS = 100 ,(TABLE_HEIGHT / 2)
 DEFENSE_BOX_X = (TABLE_WIDTH/3)
 DEFENSE_BOX_Y = (TABLE_HEIGHT/6), ((5 * TABLE_HEIGHT) / 6)
 DEFENSIVE_ACTION_BOX_OFFSET = 50
-TIME_STEP = 0.001 #1000hz
-TRAJECTORY_TIME_FRAME = 0.2 #how long to predict the puck trajectory for in seconds
+TIME_STEP = 0.01 #1000hz
+TRAJECTORY_TIME_FRAME = 0.15 #how long to predict the puck trajectory for in seconds
 ATTACK_SPREAD = 50
 MOVE_HOME_TICKS = 5
 DEFENSIVE_ACTION_TICKS = 10
@@ -153,7 +153,8 @@ class AirHockeyAI:
 
     def check_safe_to_move_home(self):
         vx, _  = self.calculate_velocity()
-        if vx > 0:
+        px, _ = self.puck_positions[1]
+        if vx > 0 or px > TABLE_WIDTH/2:
             return True
 
 
