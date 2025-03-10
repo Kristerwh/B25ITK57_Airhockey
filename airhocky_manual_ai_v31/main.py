@@ -19,6 +19,9 @@ MOVE_HOME_TICKS = 5
 DEFENSIVE_ACTION_TICKS = 10
 PASSIVE_AGGRESSIVE_TICKS = 40
 PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS = 3000
+PASSIVE_AGGRESSIVE_ACTION_OFFSET = 15
+GOONING_THRESHOLD = [(120,120),(120,TABLE_HEIGHT-120)]
+MAXIMUM_ALLOWED_GOONING = 3000
 
 
 
@@ -42,6 +45,8 @@ class AirHockeyAI:
         self.passive_aggressive_action_ticks = 0
         self.mallet_vx = 0
         self.mallet_vy = 0
+        self.gooning_counter = 0
+        self.mallet_positions = []
 
 
     def get_move_home_ticks(self):
@@ -83,6 +88,14 @@ class AirHockeyAI:
     def set_mallet_vy(self, vy):
         self.mallet_vy = vy
 
+    def reset_all_ticks(self):
+        self.move_home_ticks = 0
+        self.defensive_action_ticks = 0
+        self.aggressive_action_ticks = 0
+        self.no_intercept_ticks = 0
+        self.passive_aggressive_action_ticks = 0
+
+
     def update_positions(self, new_pos):
         if len(self.puck_positions) >= 2:
             self.puck_positions.pop(0)
@@ -97,6 +110,26 @@ class AirHockeyAI:
 
     def get_mallet_pos(self):
         return self.mallet_pos
+
+    def check_gooning(self):
+        t1 = GOONING_THRESHOLD[0][0]
+        t2 = GOONING_THRESHOLD[0][1]
+        t3 = GOONING_THRESHOLD[1][0]
+        t4 = GOONING_THRESHOLD[1][1]
+        print("T",t1,t2,t3,t4)
+        print(self.mallet_pos)
+        if (self.mallet_pos[0] < t1 and self.mallet_pos[1] < t2) or (self.mallet_pos[0] < t3 and self.mallet_pos[1] > t4):
+            self.gooning_counter += 1
+            print("its gooning!!!", self.gooning_counter)
+            if self.gooning_counter >= MAXIMUM_ALLOWED_GOONING:
+                self.gooning_counter = 0
+                self.reset_all_ticks()
+                mallet_vx, mallet_vy,ticks = self.move_mallet_home()
+                self.set_mallet_vx(mallet_vx)
+                self.set_mallet_vy(mallet_vy)
+                self.set_move_home_ticks(ticks)
+        else:
+            self.gooning_counter = 0
 
 
     def calculate_velocity(self):
@@ -188,7 +221,7 @@ class AirHockeyAI:
                 self.set_passive_aggressive_action_ticks(ticks + 1)
                 mallet_pos_tuple = self.mallet_pos
                 mallet_pos = np.array([mallet_pos_tuple[0], mallet_pos_tuple[1]])
-                target = (px - 50, py)
+                target = (px - PASSIVE_AGGRESSIVE_ACTION_OFFSET, py)
                 vx, vy = (target - mallet_pos) / ticks
                 return vx, vy
         else:
@@ -226,6 +259,8 @@ def startup():
 def run(ai, puck_pos, mallet_pos):
     ai.update_positions(puck_pos)
     ai.set_mallet_pos(mallet_pos)
+
+    ai.check_gooning()
 
     move_home_ticks = ai.get_move_home_ticks()
     defensive_action_ticks = ai.get_defensive_action_ticks()
@@ -273,6 +308,7 @@ def run(ai, puck_pos, mallet_pos):
 
     if len(ai.puck_positions) <= 1:
         return 0, 0
+
 
     puck_vel = ai.calculate_velocity()
     trajectory, trajectory_time = ai.puck_trajectory(ai.puck_positions[1], puck_vel)
