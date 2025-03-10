@@ -235,7 +235,7 @@ def run(ai, puck_pos, mallet_pos):
     mallet_vy = ai.get_mallet_vy()
 
     if passive_aggressive_ticks > 0:
-        print("passive_aggressive" , passive_aggressive_ticks)
+        #print("passive_aggressive" , passive_aggressive_ticks)
         passive_aggressive_ticks -= 1
         ai.set_passive_aggressive_action_ticks(passive_aggressive_ticks)
         if passive_aggressive_ticks == 0:
@@ -243,7 +243,7 @@ def run(ai, puck_pos, mallet_pos):
         return mallet_vx, mallet_vy
 
     if move_home_ticks > 0:
-        print("move_home", move_home_ticks)
+        #print("move_home", move_home_ticks)
         move_home_ticks -= 1
         ai.set_move_home_ticks(move_home_ticks)
         if move_home_ticks == 0:
@@ -252,7 +252,7 @@ def run(ai, puck_pos, mallet_pos):
 
     if defensive_action_ticks > 0:
         defensive_action_ticks -= 1
-        print("defensive_action", defensive_action_ticks)
+        #print("defensive_action", defensive_action_ticks)
         ai.set_defensive_action_ticks(defensive_action_ticks)
         if defensive_action_ticks == 0:
             mallet_vx, mallet_vy, ticks = ai.move_mallet_home()
@@ -263,7 +263,7 @@ def run(ai, puck_pos, mallet_pos):
         return mallet_vx, mallet_vy
 
     if aggressive_action_ticks > 0:
-        print("aggressive_action", aggressive_action_ticks)
+        #print("aggressive_action", aggressive_action_ticks)
         aggressive_action_ticks -= 1
         ai.set_aggressive_action_ticks(aggressive_action_ticks)
         if aggressive_action_ticks == 0:
