@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
+#TODO fix the mallet gooning tendencies (the mallet likes to edge for longer periods of time and this need to be addressed)
 
 MALLET_SPEED = 1000
 MALLET_SIZE = 100
@@ -182,9 +181,6 @@ class AirHockeyAI:
 
     def passive_aggressive_action(self):
         px, py  = self.puck_positions[1]
-        print(self.no_intercept_ticks, "<---")
-        print(px, "<----")
-        print(TABLE_WIDTH/2,"<-----")
         if px <= TABLE_WIDTH/2:
             self.no_intercept_ticks += 1
             if self.no_intercept_ticks >= PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS:
@@ -237,12 +233,6 @@ def run(ai, puck_pos, mallet_pos):
     passive_aggressive_ticks = ai.get_passive_aggressive_action_ticks()
     mallet_vx = ai.get_mallet_vx()
     mallet_vy = ai.get_mallet_vy()
-
-    print(move_home_ticks)
-    print(defensive_action_ticks)
-    print(aggressive_action_ticks)
-    print(passive_aggressive_ticks)
-
 
     if passive_aggressive_ticks > 0:
         print("passive_aggressive" , passive_aggressive_ticks)
