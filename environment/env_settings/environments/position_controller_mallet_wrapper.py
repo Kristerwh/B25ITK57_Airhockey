@@ -32,7 +32,7 @@ class MalletControl:
             control_signal (np.array): Processed velocity commands
         """
         # Ensure the action is within the allowed velocity range
-        max_speed = 2.0  # Adjust based on your simulation limits
+        max_speed = 200.0  # Adjust based on your simulation limits
         action = np.clip(action, -max_speed, max_speed)
 
         if self.debug:
