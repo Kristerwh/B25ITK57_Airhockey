@@ -3,24 +3,38 @@ import numpy as np
 
 #TODO fix the mallet gooning tendencies (the mallet likes to edge for longer periods of time and this need to be addressed)
 
+TICK_MULTIPLIER = 1
+def ticks(ticks): #useless
+    print(round(ticks * TICK_MULTIPLIER))
+    return round(ticks * TICK_MULTIPLIER) + 1
+
+#sizes
 MALLET_SPEED = 1000
 MALLET_SIZE = 100
 PUCK_SIZE = 63.3
 TABLE_WIDTH = 1948
 TABLE_HEIGHT = 1038
-MALLET_POS = 100 ,(TABLE_HEIGHT / 2)
+
+#zones
 DEFENSE_BOX_X = (TABLE_WIDTH/3)
 DEFENSE_BOX_Y = (TABLE_HEIGHT/6), ((5 * TABLE_HEIGHT) / 6)
-DEFENSIVE_ACTION_BOX_OFFSET = 50
+GOONING_THRESHOLD = [(120,120),(120,TABLE_HEIGHT-120)]
+
+#div
+MALLET_POS = 100 ,(TABLE_HEIGHT / 2)
 TIME_STEP = 0.01 #1000hz
 TRAJECTORY_TIME_FRAME = 0.15 #how long to predict the puck trajectory for in seconds
+
+#offsets
 ATTACK_SPREAD = 50
-MOVE_HOME_TICKS = 5
-DEFENSIVE_ACTION_TICKS = 10
-PASSIVE_AGGRESSIVE_TICKS = 40
-PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS = 3000
 PASSIVE_AGGRESSIVE_ACTION_OFFSET = 15
-GOONING_THRESHOLD = [(120,120),(120,TABLE_HEIGHT-120)]
+DEFENSIVE_ACTION_BOX_OFFSET = 0
+
+#ticks and counter threshold
+MOVE_HOME_TICKS = ticks(5)
+DEFENSIVE_ACTION_TICKS = ticks(10)
+PASSIVE_AGGRESSIVE_TICKS = ticks(40)
+PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS = 3000
 MAXIMUM_ALLOWED_GOONING = 3000
 
 
@@ -95,7 +109,6 @@ class AirHockeyAI:
         self.no_intercept_ticks = 0
         self.passive_aggressive_action_ticks = 0
 
-
     def update_positions(self, new_pos):
         if len(self.puck_positions) >= 2:
             self.puck_positions.pop(0)
@@ -116,11 +129,8 @@ class AirHockeyAI:
         t2 = GOONING_THRESHOLD[0][1]
         t3 = GOONING_THRESHOLD[1][0]
         t4 = GOONING_THRESHOLD[1][1]
-        print("T",t1,t2,t3,t4)
-        print(self.mallet_pos)
         if (self.mallet_pos[0] < t1 and self.mallet_pos[1] < t2) or (self.mallet_pos[0] < t3 and self.mallet_pos[1] > t4):
             self.gooning_counter += 1
-            print("its gooning!!!", self.gooning_counter)
             if self.gooning_counter >= MAXIMUM_ALLOWED_GOONING:
                 self.gooning_counter = 0
                 self.reset_all_ticks()
@@ -130,7 +140,6 @@ class AirHockeyAI:
                 self.set_move_home_ticks(ticks)
         else:
             self.gooning_counter = 0
-
 
     def calculate_velocity(self):
         time_step = self.time_step
@@ -143,7 +152,6 @@ class AirHockeyAI:
 
         puck_vel = vx,vy
         return puck_vel
-
 
     def puck_trajectory(self, puck_pos, puck_vel):
         time_frame = self.trajectory_time_frame
@@ -171,7 +179,6 @@ class AirHockeyAI:
 
         return trajectory, trajectory_time
 
-
     def calculate_intercept_point(self,trajectory,trajectory_time):
         idx = -1
         for px,py in trajectory:
@@ -182,13 +189,11 @@ class AirHockeyAI:
                 return intercept_point,time_to_intercept
         return None,None
 
-
     def check_safe_to_move_home(self):
         vx, _  = self.calculate_velocity()
         px, _ = self.puck_positions[1]
         if vx > 0 or px > TABLE_WIDTH/2:
             return True
-
 
     def move_mallet_home(self):
         mallet_pos = np.array([self.mallet_pos[0], self.mallet_pos[1]])
@@ -197,7 +202,6 @@ class AirHockeyAI:
         vx, vy = (target - mallet_pos) / MOVE_HOME_TICKS
 
         return vx, vy, MOVE_HOME_TICKS
-
 
     def defensive_action(self, trajectory):
         mallet_pos_tuple = self.mallet_pos
@@ -227,7 +231,6 @@ class AirHockeyAI:
         else:
             self.set_no_intercept_ticks(0)
         return 0,0
-
 
     def aggressive_action(self, intercept_point, time_to_intercept):
         px, py = intercept_point
