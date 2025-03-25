@@ -121,3 +121,42 @@ class AirHockeyBase(MuJoCo):
                                    self.obs_helper.get_from_obs(obs, "puck_y_vel"),
                                    self.obs_helper.get_from_obs(obs, "puck_yaw_vel")])
         return puck_pos, puck_vel
+
+    #---------------------------------rl testing------------------------------------------------------
+    def reward(self, state, action, next_state, absorbing):
+        print("next_state:", next_state)
+        print("len(next_state):", len(next_state))
+
+        puck_x, puck_y = next_state[0], next_state[1]
+        puck_vx, puck_vy = next_state[3], next_state[4]
+        reward = 0.0
+
+        if puck_x > 1.3:
+            reward += 1.0
+            print("+1")
+        elif puck_x < -1.3:
+            reward -= 1.0
+            print("-1")
+        elif puck_x < -1.15:
+            reward -= 0.5
+            print("-0.5")
+
+        if len(next_state) >= 10:
+            mallet_x, mallet_y = next_state[6], next_state[7]
+            mallet_vx, mallet_vy = next_state[8], next_state[9]
+
+            dist_to_puck = np.linalg.norm([puck_x - mallet_x, puck_y - mallet_y])
+            shaping = 2.0 * max(0, 1.0 - dist_to_puck * 5)
+            reward += shaping
+            print(f"Shaping reward (distance): {shaping:.3f}")
+
+            speed = np.linalg.norm([mallet_vx, mallet_vy])
+            if speed < 0.01:
+                reward -= 0.5
+                print("-0.5")
+
+        print(f"Final reward: {reward:.3f}")
+        return reward
+
+
+
