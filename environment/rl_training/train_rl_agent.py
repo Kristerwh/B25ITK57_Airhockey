@@ -8,7 +8,7 @@ obs, _ = env.reset()
 model = PPO("MlpPolicy", env, verbose=1)
 
 #Start training
-model.learn(total_timesteps=300_0)
+model.learn(total_timesteps=200_000)
 
 #model save
 model.save("ppo_airhockey")

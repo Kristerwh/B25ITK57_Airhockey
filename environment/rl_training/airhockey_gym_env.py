@@ -9,6 +9,7 @@ class AirHockeyGymEnv(gym.Env):
     def __init__(self):
         super().__init__()
         self.env = AirHockeyBase()
+        self.env_info = self.env.info
 
         raw_obs = self.env.reset()
         extended_obs = self._get_obs(raw_obs)
