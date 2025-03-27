@@ -9,7 +9,7 @@ import os
 import numpy as np
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
-from airhocky_manual_ai_v31 import main as script
+from airhocky_manual_ai_v31 import AI_script_v31 as script
 
 env = AirHockeyBase()
 

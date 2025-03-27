@@ -1,4 +1,5 @@
 import numpy as np
+from pygame.display import update
 
 #sizes
 MALLET_SPEED = 1000
@@ -14,7 +15,7 @@ GOONING_THRESHOLD = [(120,120),(120,TABLE_HEIGHT-120)]
 
 #div
 MALLET_POS = 100 ,(TABLE_HEIGHT / 2)
-TIME_STEP = 0.01 #1000hz
+TIME_STEP = 0.001 #1000hz
 TRAJECTORY_TIME_FRAME = 0.15 #how long to predict the puck trajectory for in seconds
 
 #offsets
@@ -80,6 +81,15 @@ class AirHockeyAI:
     def get_mallet_pos(self):
         return self.mallet_pos
 
+    def get_gooning_counter(self):
+        return self.gooning_counter
+
+    def get_no_intercept_ticks(self):
+        return self.no_intercept_ticks
+
+    def get_time_step(self):
+        return self.time_step
+
     #diffent set functions
     def set_mallet_pos(self, new_pos):
         self.mallet_pos = new_pos
@@ -105,20 +115,19 @@ class AirHockeyAI:
     def set_mallet_vy(self, vy):
         self.mallet_vy = vy
 
-    #  function to check if the AI should do certain actions
+    def set_gooning_counter(self,ticks):
+        self.gooning_counter = ticks
+
+    #  functions to check if the AI should do certain actions
     def check_gooning(self):
         #this function uses the gooning thresholds to detect if the puck is stuck in a corner of the table
         #if this detects that the puck is indeed stuck in the corner this function will make the mallet hit the puck repeatedly until its no longer stuck in the corner
         #without this function the AI will soft lock itself occasionally
-        t1 = GOONING_THRESHOLD[0][0]
-        t2 = GOONING_THRESHOLD[0][1]
-        t3 = GOONING_THRESHOLD[1][0]
-        t4 = GOONING_THRESHOLD[1][1]
-        if (self.mallet_pos[0] < t1 and self.mallet_pos[1] < t2) or (self.mallet_pos[0] < t3 and self.mallet_pos[1] > t4):
-            #this if statement checks if the puck is in a corner position and the adds 1 to the counter
+        if (self.mallet_pos[0] < GOONING_THRESHOLD[0][0] and self.mallet_pos[1] < GOONING_THRESHOLD[0][1]) or (self.mallet_pos[0] < GOONING_THRESHOLD[1][0] and self.mallet_pos[1] > GOONING_THRESHOLD[1][1]):
+            #this if-statement checks if the puck is in a corner position and the adds 1 to the counter
             self.gooning_counter += 1
             if self.gooning_counter >= MAXIMUM_ALLOWED_GOONING:
-                #this if statement checks if the puck have been in a corner position for a certain length of time and will force the mallet to reset itself to the home position
+                #this if-statement checks if the puck have been in a corner position for a certain length of time and will force the mallet to reset itself to the home position
                 self.gooning_counter = 0
                 self.reset_all_ticks()
                 mallet_vx, mallet_vy,ticks = self.move_mallet_home()
@@ -126,8 +135,8 @@ class AirHockeyAI:
                 self.set_mallet_vy(mallet_vy)
                 self.set_move_home_ticks(ticks)
         else:
-            #this else statement makes sure that the counter resets if the puck is no longer in the corner
-            self.gooning_counter = 0
+            #this else-statement makes sure that the counter resets if the puck is no longer in the corner
+            self.set_gooning_counter(0)
 
     def check_safe_to_move_home(self):
         #this function checks if it's safe for the mallet to move home, this determines this by looking the direction the puck is moving and looking at which side of the table the puck currently is at
@@ -145,6 +154,8 @@ class AirHockeyAI:
             self.puck_positions.pop(0)
         self.puck_positions.append(new_pos)
         self.puck_pos = new_pos
+        if len(self.puck_positions) < 2:
+            self.update_positions(new_pos)
 
     def reset_all_ticks(self):
         #resets all ticks, this effectively interrupts current move cycle
@@ -257,6 +268,7 @@ class AirHockeyAI:
         return vx,vy,ticks
 
     def passive_aggressive_action(self):
+        #TODO add a check that checks if the target position if outside the play area
         #this is currently the AI default move
         #this function makes sure the AI will always get the puck over to the other side of the table
         px, py  = self.puck_positions[1]
@@ -286,7 +298,7 @@ def startup():
 def run(ai, puck_pos, mallet_pos):
     #this is the main componet that makes the AI work, this contains the logic to deside what move to do when
 
-    #updates the AI class with the current posistions of the puck and mallet
+    #updates the AI class with the current positions of the puck and mallet
     ai.update_positions(puck_pos)
     ai.set_mallet_pos(mallet_pos)
 
@@ -340,9 +352,6 @@ def run(ai, puck_pos, mallet_pos):
             return 0, 0
         return mallet_vx, mallet_vy
 
-    #this checks that the array size is higher than 1, if the array size is less than 2 the following function call will return an error
-    if len(ai.puck_positions) <= 1:
-        return 0, 0
 
     #function call to calculate velocity, trajectory and intercept point
     puck_vel = ai.calculate_velocity()
