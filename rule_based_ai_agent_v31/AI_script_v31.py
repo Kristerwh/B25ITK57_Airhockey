@@ -14,7 +14,7 @@ GOONING_THRESHOLD = [(120,120),(120,TABLE_HEIGHT-120)]
 
 #div
 MALLET_POS = 100 ,(TABLE_HEIGHT / 2)
-TIME_STEP = 0.001 #1000hz
+TIME_STEP = 0.01 #1000hz. this should be 0.001 but this cause long processing times when running the ai due to large array size when calculating the trajectory
 TRAJECTORY_TIME_FRAME = 0.15 #how long to predict the puck trajectory for in seconds
 
 #offsets

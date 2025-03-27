@@ -1,4 +1,4 @@
-from airhocky_manual_ai_v31.AI_script_v31 import startup, TIME_STEP, TRAJECTORY_TIME_FRAME, MOVE_HOME_TICKS, MALLET_POS, \
+from rule_based_ai_agent_v31.AI_script_v31 import startup, TIME_STEP, TRAJECTORY_TIME_FRAME, MOVE_HOME_TICKS, MALLET_POS, \
     PUCK_SIZE, DEFENSIVE_ACTION_TICKS, ATTACK_SPREAD
 import math
 
