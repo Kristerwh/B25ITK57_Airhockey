@@ -29,12 +29,13 @@ class AirHockeyBase(MuJoCo):
             raise ValueError('n_agents must be either 1 or 2')
 
         action_spec = []
-        observation_spec = [("puck_x_pos", "puck_x", ObservationType.JOINT_POS),
-                            ("puck_y_pos", "puck_y", ObservationType.JOINT_POS),
-                            ("puck_yaw_pos", "puck_yaw", ObservationType.JOINT_POS),
+        observation_spec = [("puck_x_pos", "puck", ObservationType.BODY_POS),
                             ("puck_x_vel", "puck_x", ObservationType.JOINT_VEL),
                             ("puck_y_vel", "puck_y", ObservationType.JOINT_VEL),
-                            ("puck_yaw_vel", "puck_yaw", ObservationType.JOINT_VEL)]
+                            ("paddle_left_x_pos", "paddle_left",ObservationType.BODY_POS),
+                            ("paddle_left_x_vel", "paddle_left_x", ObservationType.JOINT_VEL),
+                            ("paddle_left_y_vel", "paddle_left_y", ObservationType.JOINT_VEL),
+                            ]
 
         additional_data = observation_spec.copy()
 
@@ -45,29 +46,21 @@ class AirHockeyBase(MuJoCo):
         if self.n_agents == 1:
             scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")
             action_spec += ["left_mallet_x_motor", "left_mallet_y_motor"]
-            additional_data += [("left_mallet_x_pos", "left_mallet_x", ObservationType.JOINT_POS),
-                                ("left_mallet_y_pos", "left_mallet_y", ObservationType.JOINT_POS),
-                                ("left_mallet_x_vel", "left_mallet_x", ObservationType.JOINT_VEL),
-                                ("left_mallet_y_vel", "left_mallet_y", ObservationType.JOINT_VEL), ]
             collision_spec += [
-                ("left_mallet", ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
+                ("paddle_left", ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
 
         else:  # Two-player mode
             scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "two_player.xml")  # Load updated XML
             action_spec += ["left_mallet_x_motor", "left_mallet_y_motor",
                             "right_mallet_x_motor", "right_mallet_y_motor"]
-            additional_data += [("left_mallet_x_pos", "left_mallet_x", ObservationType.JOINT_POS),
-                                ("left_mallet_y_pos", "left_mallet_y", ObservationType.JOINT_POS),
-                                ("left_mallet_x_vel", "left_mallet_x", ObservationType.JOINT_VEL),
-                                ("left_mallet_y_vel", "left_mallet_y", ObservationType.JOINT_VEL),
-                                ("right_mallet_x_pos", "right_mallet_x", ObservationType.JOINT_POS),
-                                ("right_mallet_y_pos", "right_mallet_y", ObservationType.JOINT_POS),
-                                ("right_mallet_x_vel", "right_mallet_x", ObservationType.JOINT_VEL),
-                                ("right_mallet_y_vel", "right_mallet_y", ObservationType.JOINT_VEL)]
-            collision_spec += [("left_mallet",
+            additional_data += [("paddle_right_x_pos", "paddle_right_x", ObservationType.JOINT_POS),
+                                ("paddle_right_y_pos", "paddle_right_y", ObservationType.JOINT_POS),
+                                ("paddle_right_x_vel", "paddle_right_x", ObservationType.JOINT_VEL),
+                                ("paddle_right_y_vel", "paddle_right_y", ObservationType.JOINT_VEL)]
+            collision_spec += [("paddle_left",
                                 ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l",
                                  "rim_away_r"]),
-                               ("right_mallet",
+                               ("paddle_right",
                                 ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l",
                                  "rim_away_r"])]
 
@@ -87,6 +80,33 @@ class AirHockeyBase(MuJoCo):
         self.env_info['dt'] = self.dt
         self.env_info["rl_info"] = self.info
 
+    def reward(self, obs, action, next_obs, absorbing):
+        puck_pos, puck_vel = self.get_puck(next_obs)
+
+        # --- Get mallet position (world coords) ---
+        mallet_pos = self.obs_helper.get_from_obs(next_obs, "paddle_left_x_pos")[:2]
+
+        # --- Distance to puck ---
+        dist_to_puck = np.linalg.norm(mallet_pos - puck_pos)
+
+        # --- Reward for being close ---
+        proximity_reward = 1.0 - np.tanh(dist_to_puck * 5)  # sharper curve
+
+        # --- Reward for hitting puck (vx) ---
+        x_velocity_reward = max(puck_vel[0], 0.0)  # only reward forward x-vel
+
+        # --- Bonus for contact: small reward if very close (touching) ---
+        hit_bonus = 1.0 if dist_to_puck < 0.06 else 0.0
+
+        # --- Final reward ---
+        total_reward = (
+                0.4 * proximity_reward +
+                0.4 * x_velocity_reward +
+                0.2 * hit_bonus
+        )
+
+        return total_reward
+
     # TODO
     # MODIFIED MUST BE LOOKED INTO
     def _modify_mdp_info(self, mdp_info):
@@ -99,25 +119,25 @@ class AirHockeyBase(MuJoCo):
         boundary = np.array([self.env_info['table']['length'], self.env_info['table']['width']]) / 2
         puck_pos, puck_vel = self.get_puck(obs)
 
-        if np.any(np.abs(puck_pos[:2]) > boundary) or np.linalg.norm(puck_vel) > 100:
+        if np.any(np.abs(puck_pos) > boundary) or np.linalg.norm(puck_vel) > 100:
+            print("Absorbing")
             return True
         return False
-
 
     def get_puck(self, obs):
         """
         Getting the puck properties from the observations
-        Args:
-            obs: The current observation
 
         Returns:
-            ([pos_x, pos_y, yaw], [lin_vel_x, lin_vel_y, yaw_vel])
-
+            ([pos_x, pos_y], [vel_x, vel_y])
         """
-        puck_pos = np.concatenate([self.obs_helper.get_from_obs(obs, "puck_x_pos"),
-                                   self.obs_helper.get_from_obs(obs, "puck_y_pos"),
-                                   self.obs_helper.get_from_obs(obs, "puck_yaw_pos")])
-        puck_vel = np.concatenate([self.obs_helper.get_from_obs(obs, "puck_x_vel"),
-                                   self.obs_helper.get_from_obs(obs, "puck_y_vel"),
-                                   self.obs_helper.get_from_obs(obs, "puck_yaw_vel")])
+        puck_pos = self.obs_helper.get_from_obs(obs, "puck_x_pos")[:2]  # from BODY_POS: x, y
+        puck_vel = np.concatenate([
+            self.obs_helper.get_from_obs(obs, "puck_x_vel"),
+            self.obs_helper.get_from_obs(obs, "puck_y_vel")
+        ])
         return puck_pos, puck_vel
+
+    def _modify_observation(self, obs):
+        indices = [0, 1, 3, 4, 5, 6, 8, 9]
+        return obs[indices]

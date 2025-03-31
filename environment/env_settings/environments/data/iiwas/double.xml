@@ -3,7 +3,6 @@
     <include file="iiwa2.xml"/>-->
 
     <include file="../table.xml"/>
-    <include file="mallet.xml"/>
 
     <!--
     <contact>
@@ -55,7 +54,7 @@
 
         <exclude body1="world" body2="iiwa_2/striker_mallet"/>
     </contact>
-    -->
+
     <contact>
         <exclude body1="table_surface" body2="left_mallet"/>
         <exclude body1="table_surface" body2="right_mallet"/>
@@ -64,5 +63,6 @@
         <exclude body1="world" body2="left_mallet"/>
         <exclude body1="world" body2="right_mallet"/>
     </contact>
+    -->
 
 </mujoco>

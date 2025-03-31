@@ -94,10 +94,10 @@
 
     </worldbody>
     <actuator>
-        <motor joint="paddle_left_x" ctrllimited="true" ctrlrange="-1 1"/>
-        <motor joint="paddle_left_y" ctrllimited="true" ctrlrange="-1 1"/>
-        <motor joint="paddle_right_x" ctrllimited="true" ctrlrange="-1 1"/>
-        <motor joint="paddle_right_y" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="left_mallet_x_motor" joint="paddle_left_x" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="left_mallet_y_motor" joint="paddle_left_y" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="right_mallet_x_motor" joint="paddle_right_x" ctrllimited="true" ctrlrange="-1 1"/>
+        <motor name="right_mallet_y_motor" joint="paddle_right_y" ctrllimited="true" ctrlrange="-1 1"/>
     </actuator>
 
     <contact>

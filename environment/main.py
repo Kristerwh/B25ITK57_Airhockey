@@ -23,8 +23,8 @@ env_info["_timestep"] = env_info.get("dt", 0.02)
 script_dir = os.path.dirname(os.path.abspath(__file__))
 xml_path = os.path.join(script_dir, "env_settings", "environments", "data", "table.xml")
 
-model = mujoco.MjModel.from_xml_path(xml_path)
-data = mujoco.MjData(model)
+model = env._model
+data = env._data
 
 scene = mujoco.MjvScene(model, maxgeom=1000)
 perturb = mujoco.MjvPerturb()

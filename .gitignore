@@ -5,3 +5,12 @@
 .idea/B25ITK57_Airhockey.iml
 .idea/misc.xml
 rule_based_ai_agent_v31/__pycache__/main.cpython-312.pyc
+/environment/env_settings/utils/__pycache__
+environment/env_settings/utils/__pycache__/transformations.cpython-312.pyc
+environment/env_settings/utils/__pycache__/kinematics.cpython-312.pyc
+/environment/env_settings/utils/__pycache__
+/environment/env_settings/environments/iiwas/__pycache__
+/environment/env_settings/environments/iiwas/__pycache__
+/environment/env_settings/environments/iiwas/__pycache__
+.idea/misc.xml
+/rule_based_ai_agent_v31/__pycache__

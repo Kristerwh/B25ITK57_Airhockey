@@ -48,7 +48,7 @@ puck_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "puck")
 
 scripted_ai = script.startup()
 scripted_ai2 = script.startup()
-input_shape = len(env.get_all_observation_keys())
+input_shape = len(env.get_all_observation_keys()) + 2
 action_dim = 2
 
 agent = RLAgent(input_shape)
@@ -78,15 +78,19 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
 
         next_obs, reward, absorbing, _ = env.step(action1)
 
+        # 🧠 Reward-chasing fit
+        if reward > 0:
+            target_action = action1 + reward * 0.05  # learning signal
+            agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
+
         mujoco.mj_step(model, data)
-
-
 
         if step % 10 == 0:
             mujoco.mjv_updateScene(model, data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL, scene)
             viewer.sync()
-        step += 1
 
         obs = next_obs
+        step += 1
+
         if absorbing:
             obs = env.reset()
