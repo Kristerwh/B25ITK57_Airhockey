@@ -14,7 +14,7 @@ GOONING_THRESHOLD = [(120,120),(120,TABLE_HEIGHT-120)]
 
 #div
 MALLET_POS = 100 ,(TABLE_HEIGHT / 2)
-TIME_STEP = 0.01 #1000hz. this should be 0.001 but this cause long processing times when running the ai due to large array size when calculating the trajectory
+TIME_STEP = 0.01 #this is used for velocity and trajectory calculations, it does not need to be equal to the simulation timestep
 TRAJECTORY_TIME_FRAME = 0.15 #how long to predict the puck trajectory for in seconds
 
 #offsets
@@ -36,7 +36,7 @@ MAXIMUM_ALLOWED_GOONING = 3000
 class AirHockeyAI:
     def __init__(self,mallet_pos = MALLET_POS, mallet_speed = MALLET_SPEED, mallet_size = MALLET_SIZE, puck_size = PUCK_SIZE, table_width = TABLE_WIDTH, table_height = TABLE_HEIGHT, time_step = TIME_STEP, trajectory_time_frame = TRAJECTORY_TIME_FRAME):
         self.mallet_pos = mallet_pos
-        self.mallet_speed = mallet_speed
+        self.mallet_speed = mallet_speed # is useless
         self.mallet_size = mallet_size
         self.puck_pos = None
         self.puck_size = puck_size
@@ -267,7 +267,6 @@ class AirHockeyAI:
         return vx,vy,ticks
 
     def passive_aggressive_action(self):
-        #TODO add a check that checks if the target position if outside the play area
         #this is currently the AI default move
         #this function makes sure the AI will always get the puck over to the other side of the table
         px, py  = self.puck_positions[1]
@@ -278,7 +277,10 @@ class AirHockeyAI:
                 self.set_passive_aggressive_action_ticks(ticks + 1)
                 mallet_pos_tuple = self.mallet_pos
                 mallet_pos = np.array([mallet_pos_tuple[0], mallet_pos_tuple[1]])
+                if (px - PASSIVE_AGGRESSIVE_ACTION_OFFSET) <= 0:
+                    px = PUCK_SIZE + PASSIVE_AGGRESSIVE_ACTION_OFFSET + 1
                 target = (px - PASSIVE_AGGRESSIVE_ACTION_OFFSET, py)
+                #target = (px - PASSIVE_AGGRESSIVE_ACTION_OFFSET, py + 1) use this if the ai script keeps getting stuck at the back wall without being in the corner, NOTE this is a very unlikely senaro but can cause a soft lock of the script
                 vx, vy = (target - mallet_pos) / ticks
                 return vx, vy
         else:
