@@ -14,7 +14,7 @@ GOONING_THRESHOLD = [(120,120),(120,TABLE_HEIGHT-120)]
 
 #div
 MALLET_POS = 100 ,(TABLE_HEIGHT / 2)
-TIME_STEP = 0.01 #this is used for velocity and trajectory calculations, it does not need to be equal to the simulation timestep
+TIME_STEP = 0.001 #this is used for velocity and trajectory calculations, it does not need to be equal to the simulation timestep
 TRAJECTORY_TIME_FRAME = 0.15 #how long to predict the puck trajectory for in seconds
 
 #offsets
@@ -202,8 +202,9 @@ class AirHockeyAI:
             if py <= self.puck_size or py >= self.table_height - self.puck_size:
                 vy = -vy
 
-            trajectory.append((px, py))
-            trajectory_time.append(time_elapsed)
+            if time_elapsed % 0.01 == 0:
+                trajectory.append((px, py))
+                trajectory_time.append(time_elapsed)
             time_elapsed += dt
 
         return trajectory, trajectory_time
