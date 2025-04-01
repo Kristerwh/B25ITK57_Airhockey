@@ -31,3 +31,9 @@ class RLAgent:
     def predict(self, state):
         state = np.array(state).reshape(1, -1)
         return self.model.predict(state, verbose=0)[0]
+
+    def save(self, path):
+        self.model.save(path)
+
+    def load(self, path):
+        self.model = tf.keras.models.load_model(path)
