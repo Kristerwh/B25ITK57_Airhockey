@@ -82,23 +82,11 @@ class AirHockeyBase(MuJoCo):
 
     def reward(self, obs, action, next_obs, absorbing):
         puck_pos, puck_vel = self.get_puck(next_obs)
-
-        # --- Get mallet position (world coords) ---
         mallet_pos = self.obs_helper.get_from_obs(next_obs, "paddle_left_x_pos")[:2]
-
-        # --- Distance to puck ---
         dist_to_puck = np.linalg.norm(mallet_pos - puck_pos)
-
-        # --- Reward for being close ---
-        proximity_reward = 1.0 - np.tanh(dist_to_puck * 5)  # sharper curve
-
-        # --- Reward for hitting puck (vx) ---
-        x_velocity_reward = max(puck_vel[0], 0.0)  # only reward forward x-vel
-
-        # --- Bonus for contact: small reward if very close (touching) ---
+        proximity_reward = 1.0 - np.tanh(dist_to_puck * 5)
+        x_velocity_reward = max(puck_vel[0], 0.0)
         hit_bonus = 1.0 if dist_to_puck < 0.06 else 0.0
-
-        # --- Final reward ---
         total_reward = (
                 0.4 * proximity_reward +
                 0.4 * x_velocity_reward +

@@ -78,9 +78,8 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
 
         next_obs, reward, absorbing, _ = env.step(action1)
 
-        # 🧠 Reward-chasing fit
         if reward > 0:
-            target_action = action1 + reward * 0.05  # learning signal
+            target_action = action1 + reward * 0.05
             agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
 
         mujoco.mj_step(model, data)
