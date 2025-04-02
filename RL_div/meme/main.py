@@ -53,6 +53,7 @@ def collision_reward(puck_pos_array, mallet_pos_array):
     if collision_idx is not None:
         reward_amount += 1
         reward_amount =+ get_directions(collision_idx,puck_pos_array)
+    return reward_amount
 
 
 def save_reward(collision_idx,puck_pos_array):
@@ -84,5 +85,22 @@ def shot_at_goal(puck_pos_array):
 
 
 
+puck_pos = 100,100
+mallet_pos = 50,50
+mallet_vel = 1,1
+
+def reward_for_moving_toward_puck():
+    px, py = puck_pos
+    mx, my = mallet_pos
+    mvx, mvy = mallet_vel
+
+    # Compute direction difference
+    dx, dy = px - mx, py - my
+
+    # Check if mallet is moving in the correct direction
+    if (dx * mvx >= 0) and (dy * mvy >= 0):
+        return 1  # Reward for moving toward the puck
+    else:
+        return -1  # Penalty for moving away
 
 
