@@ -98,7 +98,7 @@ def reward_for_moving_toward_puck():
     dx, dy = px - mx, py - my
 
     # Check if mallet is moving in the correct direction
-    if (dx * mvx > 0) and (dy * mvy > 0):
+    if (dx * mvx >= 0) and (dy * mvy >= 0):
         return 1  # Reward for moving toward the puck
     else:
         return -1  # Penalty for moving away
