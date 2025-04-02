@@ -1,8 +1,14 @@
 import math
 
+
 S1=10
 S2 = 10
 T = 1
+
+DBOX_Y = 200,400
+DBOX_X = 200
+
+
 
 def detect_collision_two_circles(pos_circle_1, pos_circle_2, size_circle_1, size_circle_2, tolerance):
     distance = size_circle_1 + size_circle_2 + tolerance
@@ -21,6 +27,7 @@ def detect_collision_two_circles(pos_circle_1, pos_circle_2, size_circle_1, size
     return None
 
 def get_directions(collision_idx,puck_array):
+    reward_amount = 0
     if len(puck_array) - collision_idx > 2 and collision_idx  > 2:
         x1, y1 = puck_array[0]
         x2, y2 = puck_array[collision_idx]
@@ -29,12 +36,15 @@ def get_directions(collision_idx,puck_array):
         vector_before_hit = (x2-x1), (y2-y1)
         vector_after_hit = (x3-x2), (y3-y2)
 
-        vx1,_ = vector_before_hit
         vx2,_ = vector_after_hit
-        if vx1 < 0 and vx2 < 0:
+        if vx2 > 0:
             print("good hit")
-            return True
-    return False
+            reward_amount =+ 1
+        if vx2 < 0:
+            print("bad hit")
+            reward_amount =- 1
+    return reward_amount
+
 
 
 def collision_reward(puck_pos_array, mallet_pos_array):
@@ -42,6 +52,37 @@ def collision_reward(puck_pos_array, mallet_pos_array):
     collision_idx = detect_collision_two_circles(puck_pos_array,mallet_pos_array,S1,S2,T)
     if collision_idx is not None:
         reward_amount += 1
+        reward_amount =+ get_directions(collision_idx,puck_pos_array)
 
 
-    pass
+def save_reward(collision_idx,puck_pos_array):
+    reward_amount = 0
+    x,y = puck_pos_array[collision_idx]
+    if x < DBOX_X and DBOX_Y[0] < y < DBOX_Y[1]:
+        reward_amount += 1
+        print("good save!")
+    return reward_amount
+
+def shot_at_goal(puck_pos_array):
+    reward_amount = 0
+    idx = 0
+    while idx < (len(puck_pos_array) - 1):
+        x1, y1 = puck_pos_array[idx]
+        x2, y2 = puck_pos_array[idx+1]
+
+        vx = x2 - x1
+        vy = y2 - y1
+
+        if vx > 0:
+            while x2 > 0:
+                x2 += vx
+                y2 += vy
+            if DBOX_Y[0] < y2 < DBOX_Y[1]:
+                reward_amount =+ 1
+                print("shot at goal!")
+    return reward_amount
+
+
+
+
+
