@@ -10,10 +10,10 @@ class RLAgent:
         self.model = Sequential([Input(shape=(input_shape,)),
                                  Dense(input_shape * 2, activation="relu", name="layer1"),
                                  Dense(input_shape * 4, activation="relu", name="layer2"),
-                                 # Dense(input_shape * 8, activation="relu", name="layer3"),
-                                 # Dense(input_shape * 16, activation="relu", name="layer4"),
-                                 # Dense(input_shape * 8, activation="relu", name="layer5"),
-                                 # Dense(input_shape * 4, activation="relu", name="layer6"),
+                                 Dense(input_shape * 8, activation="relu", name="layer3"),
+                                 Dense(input_shape * 16, activation="relu", name="layer4"),
+                                 Dense(input_shape * 8, activation="relu", name="layer5"),
+                                 Dense(input_shape * 4, activation="relu", name="layer6"),
                                  Dense(input_shape * 2, activation="relu", name="layer7"),
                                  Dense(input_shape, activation="relu", name="layer8"),
                                  Dense(input_shape // 2, activation="relu", name="layer9"),
@@ -28,9 +28,17 @@ class RLAgent:
     def fit(self, features, targets, epochs):
         self.model.fit(features, targets, epochs=epochs)
 
+    @tf.function
+    def _predict_fast(self, state):
+        return self.model(state, training=False)
+
     def predict(self, state):
-        state = np.array(state).reshape(1, -1)
-        return self.model.predict(state, verbose=0)[0]
+        state = np.array(state).reshape(1, -1).astype(np.float32)
+        return self._predict_fast(state).numpy()[0]
+
+    # def predict(self, state):
+    #     state = np.array(state).reshape(1, -1)
+    #     return self.model.predict(state, verbose=0)[0]
 
     def save(self, path):
         self.model.save(path)

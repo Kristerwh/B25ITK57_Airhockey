@@ -55,6 +55,7 @@ agent = RLAgent(input_shape)
 agent.compile("adam", "mean_squared_error", "mean_absolute_error")
 obs = env.reset()
 
+
 reward_list = []
 
 with (mujoco.viewer.launch_passive(model, data) as viewer):
@@ -68,10 +69,11 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
 
         # Action1 = RLAI, Action2 ScriptedAI
         # 10% chance to explore
-        if np.random.rand() < 0.05:
-            action1 = np.random.uniform(-1, 1, size=2)
+        if np.random.rand() < 0.1:
+            action1 = np.random.uniform(-5, 5, size=2)
         else:
-            action1 = agent.predict(obs)
+            noise = np.random.normal(0, 2.0, size=2)
+            action1 = agent.predict(obs) + noise
         action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
         action2 = np.array([-action2[0], -action2[1]])
         action = np.concatenate((action1, action2))
@@ -85,16 +87,18 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
         mujoco.mj_step(model, data)
         reward_list.append(reward)
 
-        if reward is not None and reward > 0:
-            target_action = action1 + reward * 0.05
-            agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
-
-        if step % 10 == 0:
+        if step % 1 == 0:
+            print(obs)
+            if reward is not None and reward > 0:
+                target_action = np.clip((action1 + reward), -5, 5)
+                agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
+            if reward is not None and reward < 0:
+                target_action = np.clip((action1 * reward), -5, 5)
+                agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
             mujoco.mjv_updateScene(model, data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL, scene)
             viewer.sync()
 
         step += 1
-        print(step)
 
         if absorbing or step >= env._mdp_info.horizon:
             obs = env.reset()
