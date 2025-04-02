@@ -9,7 +9,6 @@ from environment.env_settings.utils.universal_joint_plugin import UniversalJoint
 from mushroom_rl.environments.mujoco import MuJoCo, ObservationType
 from mushroom_rl.utils.spaces import Box
 
-from environment.main import puck_vel
 
 """
     Abstract class for all AirHockey Environments.
