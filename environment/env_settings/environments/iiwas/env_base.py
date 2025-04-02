@@ -82,19 +82,8 @@ class AirHockeyBase(MuJoCo):
         self.env_info["rl_info"] = self.info
 
     def reward(self, obs, action, next_obs, absorbing):
-        puck_pos, puck_vel = self.get_puck(next_obs)
-        mallet_pos = self.obs_helper.get_from_obs(next_obs, "paddle_left_x_pos")[:2]
-        dist_to_puck = np.linalg.norm(mallet_pos - puck_pos)
-        proximity_reward = 1.0 - np.tanh(dist_to_puck * 5)
-        x_velocity_reward = max(puck_vel[0], 0.0)
-        hit_bonus = 1.0 if dist_to_puck < 0.06 else 0.0
-        total_reward = (
-                0.4 * proximity_reward +
-                0.4 * x_velocity_reward +
-                0.2 * hit_bonus
-        )
-
-        return total_reward
+        # TODO
+        pass
 
     # TODO
     # MODIFIED MUST BE LOOKED INTO
@@ -128,12 +117,37 @@ class AirHockeyBase(MuJoCo):
         return puck_pos, puck_vel
 
     def get_mallet(self, obs):
-        mallet_pos, mallet_vel = self.get_from_obs(obs, "paddle_left_pos")[:2]
+        mallet_pos, mallet_vel = self.obs_helper.get_from_obs(obs, "paddle_left_pos")[:2]
         mallet_vel = np.concatenate([
             self.obs_helper.get_from_obs(obs, "paddle_left_x_vel"),
             self.obs_helper.get_from_obs(obs, "paddle_left_y_vel")
         ])
         return mallet_pos, mallet_vel
+
+    def detect_collision(self, obs, obj1='puck', obj2='paddle_left'):
+        radius = {
+            'puck': self.env_info['puck']['radius'],
+            'paddle_left': self.env_info['mallet']['radius'],
+        }
+
+        if obj1 == 'puck':
+            pos1, _ = self.get_puck(obs)
+        elif obj1 == 'paddle_left':
+            pos1, _ = self.get_mallet(obs)
+        else:
+            raise ValueError(f"Unsupported object: {obj1}")
+
+        if obj2 == 'puck':
+            pos2, _ = self.get_puck(obs)
+        elif obj2 == 'paddle_left':
+            pos2, _ = self.get_mallet(obs)
+        else:
+            raise ValueError(f"Unsupported object: {obj2}")
+
+        distance = np.linalg.norm(pos1 - pos2)
+        min_distance = radius[obj1] + radius[obj2]
+
+        return distance <= min_distance
 
     def _modify_observation(self, obs):
         indices = [0, 1, 3, 4, 5, 6, 8, 9]
