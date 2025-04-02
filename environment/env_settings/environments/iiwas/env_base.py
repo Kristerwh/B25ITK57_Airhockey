@@ -9,6 +9,7 @@ from environment.env_settings.utils.universal_joint_plugin import UniversalJoint
 from mushroom_rl.environments.mujoco import MuJoCo, ObservationType
 from mushroom_rl.utils.spaces import Box
 
+from environment.main import puck_vel
 
 """
     Abstract class for all AirHockey Environments.
@@ -29,10 +30,10 @@ class AirHockeyBase(MuJoCo):
             raise ValueError('n_agents must be either 1 or 2')
 
         action_spec = []
-        observation_spec = [("puck_x_pos", "puck", ObservationType.BODY_POS),
+        observation_spec = [("puck_pos", "puck", ObservationType.BODY_POS),
                             ("puck_x_vel", "puck_x", ObservationType.JOINT_VEL),
                             ("puck_y_vel", "puck_y", ObservationType.JOINT_VEL),
-                            ("paddle_left_x_pos", "paddle_left",ObservationType.BODY_POS),
+                            ("paddle_left_pos", "paddle_left",ObservationType.BODY_POS),
                             ("paddle_left_x_vel", "paddle_left_x", ObservationType.JOINT_VEL),
                             ("paddle_left_y_vel", "paddle_left_y", ObservationType.JOINT_VEL),
                             ]
@@ -119,12 +120,20 @@ class AirHockeyBase(MuJoCo):
         Returns:
             ([pos_x, pos_y], [vel_x, vel_y])
         """
-        puck_pos = self.obs_helper.get_from_obs(obs, "puck_x_pos")[:2]  # from BODY_POS: x, y
+        puck_pos = self.obs_helper.get_from_obs(obs, "puck_pos")[:2]  # from BODY_POS: x, y
         puck_vel = np.concatenate([
             self.obs_helper.get_from_obs(obs, "puck_x_vel"),
             self.obs_helper.get_from_obs(obs, "puck_y_vel")
         ])
         return puck_pos, puck_vel
+
+    def get_mallet(self, obs):
+        mallet_pos, mallet_vel = self.get_from_obs(obs, "paddle_left_pos")[:2]
+        mallet_vel = np.concatenate([
+            self.obs_helper.get_from_obs(obs, "paddle_left_x_vel"),
+            self.obs_helper.get_from_obs(obs, "paddle_left_y_vel")
+        ])
+        return mallet_pos, mallet_vel
 
     def _modify_observation(self, obs):
         indices = [0, 1, 3, 4, 5, 6, 8, 9]
