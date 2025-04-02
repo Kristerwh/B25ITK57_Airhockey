@@ -68,7 +68,7 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
 
         # Action1 = RLAI, Action2 ScriptedAI
         # 10% chance to explore
-        if np.random.rand() < 0.1:
+        if np.random.rand() < 0.05:
             action1 = np.random.uniform(-1, 1, size=2)
         else:
             action1 = agent.predict(obs)
@@ -94,9 +94,10 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
             viewer.sync()
 
         step += 1
+        print(step)
 
         if absorbing or step >= env._mdp_info.horizon:
             obs = env.reset()
-            step_since_reset = 0
+            step = 0
         else:
             obs = next_obs
