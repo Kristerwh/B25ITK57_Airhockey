@@ -88,8 +88,8 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
             mujoco.mjv_updateScene(model, data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL, scene)
             viewer.sync()
 
-        obs = next_obs
-        step += 1
-
         if absorbing:
             obs = env.reset()
+
+        obs = next_obs
+        step += 1
