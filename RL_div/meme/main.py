@@ -53,6 +53,7 @@ def collision_reward(puck_pos_array, mallet_pos_array):
     if collision_idx is not None:
         reward_amount += 1
         reward_amount =+ get_directions(collision_idx,puck_pos_array)
+    return reward_amount
 
 
 def save_reward(collision_idx,puck_pos_array):
