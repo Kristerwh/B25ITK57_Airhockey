@@ -9,8 +9,6 @@ from environment.env_settings.utils.universal_joint_plugin import UniversalJoint
 from mushroom_rl.environments.mujoco import MuJoCo, ObservationType
 from mushroom_rl.utils.spaces import Box
 
-from environment.main import puck_vel
-
 """
     Abstract class for all AirHockey Environments.
 
@@ -82,8 +80,16 @@ class AirHockeyBase(MuJoCo):
         self.env_info["rl_info"] = self.info
 
     def reward(self, obs, action, next_obs, absorbing):
-        # TODO
-        pass
+        puck_pos, puck_vel = self.get_puck(obs)
+        mallet_pos, mallet_vel = self.get_mallet(obs)
+        dist_puck_mallet = np.linalg.norm(mallet_pos - puck_pos)
+        reward = 0
+        if puck_pos[0] <= 0:
+            print(dist_puck_mallet)
+            reward = 1 - dist_puck_mallet
+            if self.is_colliding(next_obs, 'puck', 'paddle_left'):
+                reward = 1.0
+        return reward
 
     # TODO
     # MODIFIED MUST BE LOOKED INTO
@@ -117,14 +123,14 @@ class AirHockeyBase(MuJoCo):
         return puck_pos, puck_vel
 
     def get_mallet(self, obs):
-        mallet_pos, mallet_vel = self.obs_helper.get_from_obs(obs, "paddle_left_pos")[:2]
+        mallet_pos = self.obs_helper.get_from_obs(obs, "paddle_left_pos")[:2]
         mallet_vel = np.concatenate([
             self.obs_helper.get_from_obs(obs, "paddle_left_x_vel"),
             self.obs_helper.get_from_obs(obs, "paddle_left_y_vel")
         ])
         return mallet_pos, mallet_vel
 
-    def detect_collision(self, obs, obj1='puck', obj2='paddle_left'):
+    def is_colliding(self, obs, obj1='puck', obj2='paddle_left'):
         radius = {
             'puck': self.env_info['puck']['radius'],
             'paddle_left': self.env_info['mallet']['radius'],
