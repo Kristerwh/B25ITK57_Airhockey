@@ -180,6 +180,7 @@ class AirHockeyAI:
         return puck_vel
 
     def puck_trajectory(self, puck_pos, puck_vel):
+        #todo optimize plz :)
         #calculate the pucks trajectory using the velocity of the puck and the last puck position
         #this returns 2 arrays one with the coordinates of each point and the other with the corresponding time for these points
         #this will be used by the calculate_intercept_point function
