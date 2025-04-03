@@ -59,10 +59,6 @@ with mujoco.viewer.launch_passive(
     pyautogui.getWindowsWithTitle("MuJoCo")[0].maximize()
 
     while viewer.is_running():
-        print("paddle_left qpos index:", paddle_id)
-        print("paddle_right qpos index:", paddle_id2)
-        print("qpos.shape:", data.qpos.shape)
-
         base_pos = np.array([data.qpos[5], data.qpos[6]])
         puck_pos = float(data.xpos[puck_id][0] * 1000) + 974, float(data.xpos[puck_id][1] * 1000) + 519
         puck_pos_reverted = 2 * 974 - (float(data.xpos[puck_id][0] * 1000) + 974), 2 * 519 - (float(data.xpos[puck_id][1] * 1000) + 519)
@@ -80,7 +76,7 @@ with mujoco.viewer.launch_passive(
         mouse_x, mouse_y = pyautogui.position()
 
         target_x = (mouse_x - 974) / 1000.0
-        target_y = (mouse_y - 519) / 1000.0
+        target_y = (2 * 519 - mouse_y) / 1000.0
         target_pos = np.array([target_x, target_y])
 
         current_pos = np.array([data.qpos[5], data.qpos[6]])  # paddle_left position
