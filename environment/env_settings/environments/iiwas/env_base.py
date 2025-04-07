@@ -93,7 +93,7 @@ class AirHockeyBase(MuJoCo):
 
             # Bonus for hitting the puck
             if self.is_colliding(next_obs, 'puck', 'paddle_left'):
-                reward += 10.0
+                reward += 30.0
 
             # Opponent goal
             if absorbing:
@@ -186,7 +186,7 @@ class AirHockeyBase(MuJoCo):
         # Sample random position
         min_dist = 0.5
         while True:
-            x = np.random.uniform(*(-0.55, 0.05))
+            x = np.random.uniform(*(-0.45, 0.05))
             y = np.random.uniform(*(-0.4, 0.4))
             mx = np.random.uniform(*(-0.45, 0.1)) + 0.35
             my = np.random.uniform(*(-0.4, 0.4))

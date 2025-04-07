@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.layers import Dense, Input, Dropout
 from tensorflow.python.keras.saving.saved_model.load import metrics
 import numpy as np
 
@@ -13,19 +13,27 @@ class RLAgent:
         self.optimizer = tf.keras.optimizers.Adam(learning_rate)
 
     def _build_model(self):
+        # DROPOUT ADDS MORE VARIATION IN OUTPUT
         return Sequential([Input(shape=(self.input_shape,)),
                            Dense(16, activation="relu"),
+                           Dropout(0.1),
                            Dense(32, activation="relu"),
+                           Dropout(0.1),
                            Dense(64, activation="relu"),
+                           Dropout(0.2),
                            Dense(32, activation="relu"),
+                           Dropout(0.1),
                            Dense(16, activation="relu"),
+                           Dropout(0.1),
                            Dense(8, activation="relu"),
+                           Dropout(0.1),
                            Dense(4, activation="relu"),
                            Dense(self.action_output, activation="linear", name="output_layer")])
 
     @tf.function
     def _predict_fast(self, state):
-        return self.model(state, training=False)
+        # DROPOUT WHEN TRAINING = TRUE
+        return self.model(state, training=True)
 
     def predict(self, state):
         state = np.array(state, dtype=np.float32).reshape(1, -1)  # Force batch dim

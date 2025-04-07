@@ -57,6 +57,7 @@ obs_buffer = []
 action_buffer = []
 reward_buffer = []
 
+
 def compute_returns(rewards, gamma=0.99):
     returns = []
     G = 0
@@ -64,6 +65,7 @@ def compute_returns(rewards, gamma=0.99):
         G = r + gamma * G
         returns.insert(0, G)
     return np.array(returns)
+
 
 def strip_z(obs):
     puck_pos = env.obs_helper.get_from_obs(obs, "puck_pos")[:2]
@@ -78,6 +80,7 @@ def strip_z(obs):
     ])
     return np.concatenate([puck_pos, puck_vel, mallet_pos, mallet_vel])
 
+
 with (mujoco.viewer.launch_passive(model, data) as viewer):
     # agent.load("saved/model_rl.keras")
     mujoco.mj_step(model, data)
@@ -87,12 +90,14 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
     while viewer.is_running():
         base_pos = np.array([data.qpos[5], data.qpos[6]])
         puck_pos = float(data.xpos[puck_id][0] * 1000) + 974, float(data.xpos[puck_id][1] * 1000) + 519
-        puck_pos_reverted = 2 * 974 - (float(data.xpos[puck_id][0] * 1000) + 974), 2 * 519 - (float(data.xpos[puck_id][1] * 1000) + 519)
+        puck_pos_reverted = 2 * 974 - (float(data.xpos[puck_id][0] * 1000) + 974), 2 * 519 - (
+                    float(data.xpos[puck_id][1] * 1000) + 519)
         mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + 974, float(data.xpos[paddle_id][1] * 1000) + 519
-        mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (float(data.xpos[paddle_id2][1] * 1000) + 519)
+        mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (
+                    float(data.xpos[paddle_id2][1] * 1000) + 519)
 
-        noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.1 else 0
-        action1 = 5 * agent.predict(obs) + noise
+        noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.05 else 0
+        action1 = agent.predict(obs) # + noise
         action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
         action2 = np.array([-action2[0], -action2[1]])
         action = np.concatenate((action1, action2))
@@ -116,14 +121,17 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
         #     print(obs)
         step += 1
 
-        if absorbing or step >= 2000:
-            reward_buffer = [r if r is not None else 0.0 for r in reward_buffer]
-            returns = compute_returns(reward_buffer)
-            returns = (returns - np.mean(returns)) / (np.std(returns) + 1e-8)
+        if step % 250 == 0 or absorbing:
+            if reward_buffer:  # Only train if we have something
+                reward_buffer = [r if r is not None else 0.0 for r in reward_buffer]
+                returns = compute_returns(reward_buffer)
+                returns = (returns - np.mean(returns)) / (np.std(returns) + 1e-8)
+                loss = agent.train(obs_buffer, action_buffer, returns)
+                print(f"Step {step} done. Reward sum: {np.sum(reward_buffer):.2f}, Loss: {loss:.4f}")
 
-            loss = agent.train(obs_buffer, action_buffer, returns)
-            print(f"Episode {episode} done. Total reward: {np.sum(reward_buffer):.2f}, Loss: {loss:.4f}")
-            episode += 1
+                obs_buffer.clear()
+                action_buffer.clear()
+                reward_buffer.clear()
 
             if episode == 50:
                 agent.save('saved/model_rl.keras', include_optimizer=True)
@@ -131,10 +139,11 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
                 episode = 0
 
             # Reset buffers og miljø
-            obs = strip_z(env.reset())
-            step = 0
-            obs_buffer.clear()
-            action_buffer.clear()
-            reward_buffer.clear()
+            if absorbing or step >= 10000:
+                obs = strip_z(env.reset())
+                step = 0
+                episode += 1
+                print(f"Episode {episode} done. Total reward: {np.sum(reward_buffer):.2f}, Loss: {loss:.4f}")
+            obs = strip_z(next_obs)
         else:
             obs = strip_z(next_obs)
