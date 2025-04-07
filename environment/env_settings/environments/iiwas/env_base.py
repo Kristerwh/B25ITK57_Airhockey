@@ -82,27 +82,27 @@ class AirHockeyBase(MuJoCo):
     def reward(self, obs, action, next_obs, absorbing):
         puck_pos, puck_vel = self.get_puck(obs)
         mallet_pos, mallet_vel = self.get_mallet(obs)
-        dist_puck_mallet = np.linalg.norm(mallet_pos - puck_pos)
+        dist_puck_mallet = np.linalg.norm(puck_pos - mallet_pos)
         reward = 0
-        # if puck_pos[0] <= 0:
-        #     px, py = puck_pos
-        #     mx, my = mallet_pos
-        #     mvx, mvy = mallet_vel
-        #
-        #     # Compute direction difference
-        #     dx, dy = px - mx, py - my
-        #
-        #     # Check if mallet is moving in the correct direction
-        #     if (dx * mvx >= 0) and (dy * mvy > 0) or (dx * mvx > 0) and (dy * mvy >= 0):
-        #         return 1  # Reward for moving toward the puck
-        #     if self.is_colliding(next_obs, 'puck', 'paddle_left'):
-        #         reward = 1.0
-        #     else:
-        #         return -1  # Penalty for moving away
+        if puck_pos[0] <= 0:
+            px, py = puck_pos
+            mx, my = mallet_pos
+            mvx, mvy = mallet_vel
+
+            # Compute direction difference
+            dx, dy = px - mx, py - my
+
+            # Check if mallet is moving in the correct direction
+            if (dx * mvx >= 0) and (dy * mvy > 0) or (dx * mvx > 0) and (dy * mvy >= 0):
+                return 1  # Reward for moving toward the puck
+            if self.is_colliding(next_obs, 'puck', 'paddle_left'):
+                reward = 1.0
+            else:
+                return -1  # Penalty for moving away
             # --------
-        print(dist_puck_mallet)
-        reward = 1 - dist_puck_mallet
-        return reward
+            # print(dist_puck_mallet)
+            # reward = 1 - dist_puck_mallet
+            return reward
 
     # TODO
     # MODIFIED MUST BE LOOKED INTO

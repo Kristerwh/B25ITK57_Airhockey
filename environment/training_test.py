@@ -69,11 +69,10 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
 
         # Action1 = RLAI, Action2 ScriptedAI
         # 10% chance to explore
-        if np.random.rand() < 0.1:
-            action1 = np.random.uniform(-5, 5, size=2)
-        else:
-            noise = np.random.normal(0, 2.0, size=2)
-            action1 = agent.predict(obs) + noise
+        # if np.random.rand() < 0.5:
+        #     action1 = np.random.uniform(-5, 5, size=2)
+        noise = np.random.normal(0, 2.0, size=2)
+        action1 = agent.predict(obs) + noise
         action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
         action2 = np.array([-action2[0], -action2[1]])
         action = np.concatenate((action1, action2))
@@ -88,19 +87,26 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
         reward_list.append(reward)
 
         if step % 1 == 0:
-            print(obs)
-            if reward is not None and reward > 0:
-                target_action = np.clip((action1 + reward), -5, 5)
-                agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
-            if reward is not None and reward < 0:
-                target_action = np.clip((action1 * reward), -5, 5)
-                agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
+            if reward is not None and reward > 0.1:
+                mallet_pos = np.array(env.obs_helper.get_from_obs(obs, "paddle_left_pos")[:2])
+                puck_pos = np.array(env.obs_helper.get_from_obs(obs, "puck_pos")[:2])
+                direction = puck_pos - mallet_pos
+                norm = np.linalg.norm(direction)
+                if norm > 0:
+                    target_action = -(direction / norm)
+                    print(direction)
+                    print(norm)
+                    print(target_action)
+                    print("Model prediction:", agent.predict(obs))
+                    print("Target action:", target_action)
+                    agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
             mujoco.mjv_updateScene(model, data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL, scene)
             viewer.sync()
 
         step += 1
 
-        if absorbing or step >= env._mdp_info.horizon:
+        if absorbing or step >= 2000: # env._mdp_info.horizon:
+            agent.save("saved/model.keras")
             obs = env.reset()
             step = 0
         else:
