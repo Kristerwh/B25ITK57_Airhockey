@@ -82,27 +82,41 @@ class AirHockeyBase(MuJoCo):
     def reward(self, obs, action, next_obs, absorbing):
         puck_pos, puck_vel = self.get_puck(obs)
         mallet_pos, mallet_vel = self.get_mallet(obs)
-        dist_puck_mallet = np.linalg.norm(puck_pos - mallet_pos)
+        # print(f"Mallet pos: {mallet_pos}, Mallet vel: {mallet_vel}")
         reward = 0
+
+        # Puck on AI side
         if puck_pos[0] <= 0:
-            px, py = puck_pos
-            mx, my = mallet_pos
-            mvx, mvy = mallet_vel
+            # Penalize distance to puck
+            dist = np.linalg.norm(puck_pos - mallet_pos)
+            reward -= min(dist, 1.0) * 0.05
 
-            # Compute direction difference
-            dx, dy = px - mx, py - my
-
-            # Check if mallet is moving in the correct direction
-            if (dx * mvx >= 0) and (dy * mvy > 0) or (dx * mvx > 0) and (dy * mvy >= 0):
-                return 1  # Reward for moving toward the puck
+            # Bonus for hitting the puck
             if self.is_colliding(next_obs, 'puck', 'paddle_left'):
-                reward = 1.0
-            else:
-                return -1  # Penalty for moving away
-            # --------
-            # print(dist_puck_mallet)
-            # reward = 1 - dist_puck_mallet
-            return reward
+                reward += 10.0
+
+            # Opponent goal
+            if absorbing:
+                print("Opponent Scores!")
+                reward -= 50
+
+            # Bonus if moving toward the puck
+            dx, dy = puck_pos - mallet_pos
+            mvx, mvy = mallet_vel
+            if (dx * mvx >= 0) and (dy * mvy >= 0):
+                reward += 0.05
+
+        # Mallet on opponents side
+        if mallet_pos[0] > 0:
+            return -1
+
+        # Puck on opponents side
+        if puck_pos[0] > 0:
+            reward += 0.1
+            if absorbing:
+                reward += 50
+                print("AI Scores!")
+        return reward
 
     # TODO
     # MODIFIED MUST BE LOOKED INTO
@@ -168,6 +182,32 @@ class AirHockeyBase(MuJoCo):
 
         return distance <= min_distance
 
-    def _modify_observation(self, obs):
-        indices = [0, 1, 3, 4, 5, 6, 8, 9]
-        return obs[indices]
+    def _randomize_puck_position(self):
+        # Sample random position
+        min_dist = 0.5
+        while True:
+            x = np.random.uniform(*(-0.55, 0.05))
+            y = np.random.uniform(*(-0.4, 0.4))
+            mx = np.random.uniform(*(-0.45, 0.1)) + 0.35
+            my = np.random.uniform(*(-0.4, 0.4))
+            distance = np.linalg.norm([x - mx, y - my])
+            if distance >= min_dist:
+                break  # valid sample
+
+
+        # Set the puck position directly in MuJoCo
+        puck_body_id = self._model.body("puck").id
+        self._data.qpos[self._model.jnt("puck_x").qposadr] = x
+        self._data.qpos[self._model.jnt("puck_y").qposadr] = y
+        mallet_body_id = self._model.body("paddle_left").id
+        self._data.qpos[self._model.jnt("paddle_left_x").qposadr] = mx
+        self._data.qpos[self._model.jnt("paddle_left_y").qposadr] = my
+
+    def reset(self, obs=None):
+        super().reset(obs)  # This will set up model/data/obs_helper and reset MuJoCo
+        self._randomize_puck_position()
+        mujoco.mj_forward(self._model, self._data)
+
+        # Recreate observation from updated state
+        self._obs = self._create_observation(self.obs_helper._build_obs(self._data))
+        return self._obs

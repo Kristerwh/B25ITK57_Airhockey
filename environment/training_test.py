@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import tensorflow as tf
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -52,14 +53,37 @@ input_shape = len(env.get_all_observation_keys()) + 2
 action_dim = 2
 
 agent = RLAgent(input_shape)
-agent.compile("adam", "mean_squared_error", "mean_absolute_error")
-obs = env.reset()
+obs_buffer = []
+action_buffer = []
+reward_buffer = []
 
+def compute_returns(rewards, gamma=0.99):
+    returns = []
+    G = 0
+    for r in reversed(rewards):
+        G = r + gamma * G
+        returns.insert(0, G)
+    return np.array(returns)
 
-reward_list = []
+def strip_z(obs):
+    puck_pos = env.obs_helper.get_from_obs(obs, "puck_pos")[:2]
+    puck_vel = np.concatenate([
+        env.obs_helper.get_from_obs(obs, "puck_x_vel"),
+        env.obs_helper.get_from_obs(obs, "puck_y_vel")
+    ])
+    mallet_pos = env.obs_helper.get_from_obs(obs, "paddle_left_pos")[:2]
+    mallet_vel = np.concatenate([
+        env.obs_helper.get_from_obs(obs, "paddle_left_x_vel"),
+        env.obs_helper.get_from_obs(obs, "paddle_left_y_vel")
+    ])
+    return np.concatenate([puck_pos, puck_vel, mallet_pos, mallet_vel])
 
 with (mujoco.viewer.launch_passive(model, data) as viewer):
+    # agent.load("saved/model_rl.keras")
+    mujoco.mj_step(model, data)
+    obs = strip_z(env.reset())
     step = 0
+    episode = 0
     while viewer.is_running():
         base_pos = np.array([data.qpos[5], data.qpos[6]])
         puck_pos = float(data.xpos[puck_id][0] * 1000) + 974, float(data.xpos[puck_id][1] * 1000) + 519
@@ -67,11 +91,7 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
         mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + 974, float(data.xpos[paddle_id][1] * 1000) + 519
         mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (float(data.xpos[paddle_id2][1] * 1000) + 519)
 
-        # Action1 = RLAI, Action2 ScriptedAI
-        # 10% chance to explore
-        # if np.random.rand() < 0.5:
-        #     action1 = np.random.uniform(-5, 5, size=2)
-        noise = np.random.normal(0, 2.0, size=2)
+        noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.1 else 0
         action1 = agent.predict(obs) + noise
         action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
         action2 = np.array([-action2[0], -action2[1]])
@@ -84,30 +104,38 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
 
         next_obs, reward, absorbing, _ = env.step(action1)
         mujoco.mj_step(model, data)
-        reward_list.append(reward)
+        obs_buffer.append(obs)
+        action_buffer.append(action1)
+        reward_buffer.append(reward)
 
-        if step % 1 == 0:
-            if reward is not None and reward > 0.1:
-                mallet_pos = np.array(env.obs_helper.get_from_obs(obs, "paddle_left_pos")[:2])
-                puck_pos = np.array(env.obs_helper.get_from_obs(obs, "puck_pos")[:2])
-                direction = puck_pos - mallet_pos
-                norm = np.linalg.norm(direction)
-                if norm > 0:
-                    target_action = -(direction / norm)
-                    print(direction)
-                    print(norm)
-                    print(target_action)
-                    print("Model prediction:", agent.predict(obs))
-                    print("Target action:", target_action)
-                    agent.fit(np.array([obs]), np.array([target_action]), epochs=1)
+        if step % 10 == 0:
             mujoco.mjv_updateScene(model, data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL, scene)
             viewer.sync()
 
+        if step % 1000 == 0:
+            print(obs)
         step += 1
 
-        if absorbing or step >= 2000: # env._mdp_info.horizon:
-            agent.save("saved/model.keras")
-            obs = env.reset()
+        if absorbing or step >= 2000:
+            reward_buffer = [r if r is not None else 0.0 for r in reward_buffer]
+            returns = compute_returns(reward_buffer)
+            returns = (returns - np.mean(returns)) / (np.std(returns) + 1e-8)
+
+            loss = agent.train(obs_buffer, action_buffer, returns)
+
+            print(f"Episode {episode} done. Total reward: {np.sum(reward_buffer):.2f}, Loss: {loss:.4f}")
+            episode += 1
+
+            if episode == 50:
+                agent.save('saved/model_rl.keras', include_optimizer=True)
+                print(f"✅ Lagret modell etter {episode} episoder")
+                episode = 0
+
+            # Reset buffers og miljø
+            obs = strip_z(env.reset())
             step = 0
+            obs_buffer.clear()
+            action_buffer.clear()
+            reward_buffer.clear()
         else:
-            obs = next_obs
+            obs = strip_z(next_obs)
