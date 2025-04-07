@@ -107,13 +107,11 @@ with mujoco.viewer.launch_passive(
         control_action = controller.apply_action(action)
         data.ctrl[2:4] = control_action[2:4]
 
-        ##work in progress
+        goal_result = goal_manager.check_goal()
+        if goal_result:
+            print(goal_result)
+
         goal_manager.maybe_apply_reset()
-        if not goal_manager.is_resetting():
-            scorer = goal_manager.check_goal()
-            if scorer:
-                p, a = goal_manager.get_score()
-                print(f"{scorer} SCORES! Player: {p} - AI: {a}")
 
         mujoco.mj_step(model, data)
         mujoco.mjv_updateScene(model, data, mujoco.MjvOption(), None, camera, mujoco.mjtCatBit.mjCAT_ALL, scene)

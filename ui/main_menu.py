@@ -1,8 +1,26 @@
 import sys
 import subprocess
 import os
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QPushButton, QVBoxLayout,
+    QWidget, QLabel, QDialog, QGridLayout
+)
+from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtCore import Qt, QTimer
+
+class StatsWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Match Statistics")
+        self.setGeometry(600, 200, 400, 300)
+
+        layout = QGridLayout()
+        layout.addWidget(QLabel("AI Wins: 12"), 0, 0)
+        layout.addWidget(QLabel("Player Wins: 8"), 1, 0)
+        layout.addWidget(QLabel("AI Win Rate: 60%"), 2, 0)
+        layout.addWidget(QLabel("Avg Puck Speed: 1.2 m/s"), 3, 0)
+
+        self.setLayout(layout)
 
 class MainMenu(QMainWindow):
     def __init__(self):
@@ -16,9 +34,17 @@ class MainMenu(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
+        banner = QLabel()
+        banner.setAlignment(Qt.AlignCenter)
+        banner.setText("Air Hockey Simulator")
+        banner.setStyleSheet("color: white;")
+        banner.setFont(QFont("Arial", 36, QFont.Bold))
+        layout.addWidget(banner)
+
         button_definitions = {
             "Manual AI vs AI": self.run_manual_vs_ai,
             "Touchscreen test vs AI": self.touchscreen_vs_ai,
+            "Show Stats": self.show_stats,
             "Ikke enda klar 2": self.placeholder,
             "Ikke enda klar 3": self.placeholder
         }
@@ -49,11 +75,15 @@ class MainMenu(QMainWindow):
         subprocess.Popen([sys.executable, script_path])
 
     def touchscreen_vs_ai(self):
-        script_path = os.path.abspath("../environment/main_copy_for_ui_testing_touchscreen.py")
+        script_path = os.path.abspath("test_scripts/main_copy_for_ui_testing_touchscreen.py")
         subprocess.Popen([sys.executable, script_path])
 
+    def show_stats(self):
+        self.stats_window = StatsWindow()
+        self.stats_window.exec_()
+
     def placeholder(self):
-        print("placeholder for no, bytter til andre AI modes senere")
+        print("placeholder for now")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
