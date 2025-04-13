@@ -11,11 +11,12 @@ class Actor(nn.Module):
             nn.Linear(64, 64), nn.ReLU(),
             nn.Linear(64, action_dim)
         )
-        self.log_std = nn.Parameter(torch.zeros(action_dim))
+        self.log_std = nn.Parameter(torch.zeros(action_dim).clamp(-1, 1))
+
 
     def forward(self, x):
         mu = self.net(x)
-        std = torch.exp(self.log_std)
+        std = torch.exp(self.log_std.clamp(-2, 2))
         return Normal(mu, std)
 
 

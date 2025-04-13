@@ -10,6 +10,8 @@ class PPOTrainer:
         self.clip_eps = clip_eps
         self.gamma = gamma
         self.lam = lam
+        self.entropy_coef = 0.05
+        self.entropy_anneal_rate = 0.00005
 
     def compute_gae(self, rewards, values, dones):
         advantages = []
@@ -20,8 +22,10 @@ class PPOTrainer:
             gae = delta + self.gamma * self.lam * (1 - dones[step]) * gae
             advantages.insert(0, gae)
             next_value = values[step]
-        returns = np.array(advantages) + np.array(values)
-        return np.array(advantages), returns
+        advantages = np.array(advantages)
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+        returns = advantages + np.array(values)
+        return advantages, returns
 
     def ppo_update(self, obs, actions, log_probs_old, returns, advantages, epochs=10, batch_size=64):
         obs = torch.tensor(obs, dtype=torch.float32)
@@ -29,6 +33,12 @@ class PPOTrainer:
         log_probs_old = torch.tensor(log_probs_old, dtype=torch.float32)
         returns = torch.tensor(returns, dtype=torch.float32)
         advantages = torch.tensor(advantages, dtype=torch.float32)
+
+        policy_losses, value_losses, entropy_vals = [], [], []
+        perm = torch.randperm(len(obs))
+        obs, actions, log_probs_old, returns, advantages = (
+            obs[perm], actions[perm], log_probs_old[perm], returns[perm], advantages[perm]
+        )
 
         for _ in range(epochs):
             for i in range(0, len(obs), batch_size):
@@ -44,12 +54,20 @@ class PPOTrainer:
                 clip_adv = torch.clamp(ratio, 1 - self.clip_eps, 1 + self.clip_eps) * adv_b
                 policy_loss = -torch.min(ratio * adv_b, clip_adv).mean()
                 value_loss = ((value - ret_b) ** 2).mean()
-                entropy_loss = -entropy.mean()
+                entropy_loss = -self.entropy_coef * entropy.mean()
 
-                loss = policy_loss + 0.5 * value_loss + 0.01 * entropy_loss
+                loss = policy_loss + 0.5 * value_loss + entropy_loss
                 self.agent.optimizer.zero_grad()
                 loss.backward()
                 self.agent.optimizer.step()
+
+                policy_losses.append(policy_loss.item())
+                value_losses.append(value_loss.item())
+                entropy_vals.append(entropy.mean().item())
+
+        self.entropy_coef = max(0.001, self.entropy_coef - self.entropy_anneal_rate)
+        return np.mean(policy_losses), np.mean(value_losses), np.mean(entropy_vals)
+
 
     def act(self, obs):
         obs_tensor = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
@@ -64,7 +82,6 @@ class PPOTrainer:
 
     def save(self, path):
         import os
-
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self.agent.actor.state_dict(), path + "_actor.pt")
         torch.save(self.agent.critic.state_dict(), path + "_critic.pt")
