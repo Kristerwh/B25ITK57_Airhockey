@@ -6,7 +6,7 @@ from datetime import datetime
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.PPO_training.ppo_trainer import PPOTrainer
-from environment.PPO_training.ppo_rewards import ppo_reward, phase1_reward
+from environment.PPO_training.ppo_rewards import ppo_reward
 from rule_based_ai_agent_v31 import AI_script_v31 as script
 import mujoco
 import mujoco.viewer
@@ -50,7 +50,7 @@ def main(render=True):
     obs_dim = 8
     act_dim = 2
     trainer = PPOTrainer(obs_dim, act_dim)
-    total_episodes = 1000
+    total_episodes = 500
     rollout_len = 500
 
     reward_log = []
@@ -58,7 +58,7 @@ def main(render=True):
 
     def run_episode(ep):
         obs = strip_z(reset_env_centered(env), env)
-        if ep < 200:
+        if ep < 200 or (600 <= ep < 620):
             env._data.qvel[0:2] = 0
             env._data.qpos[0:2] = 0
             mujoco.mj_forward(env._model, env._data)
@@ -86,7 +86,7 @@ def main(render=True):
             next_obs_raw, _, done, _ = env.step(action1)
             next_obs = strip_z(next_obs_raw, env)
 
-            reward = phase1_reward(obs, action1, next_obs, done, env) if ep < 200 else ppo_reward(obs, action1, next_obs, done, env)
+            reward = ppo_reward(obs, action1, next_obs, done, env, ep=ep)
             episode_reward += reward
 
             obs_buf.append(obs)
@@ -107,7 +107,7 @@ def main(render=True):
 
         reward_log.append(episode_reward)
         advantages, returns = trainer.compute_gae(rew_buf, val_buf, done_buf)
-        pol_loss, val_loss, entropy_val = trainer.ppo_update(obs_buf, act_buf, logp_buf, returns, advantages)
+        pol_loss, val_loss, entropy_val = trainer.ppo_update(obs_buf, act_buf, logp_buf, returns, advantages, current_episode=ep)
         policy_losses.append(pol_loss)
         value_losses.append(val_loss)
         entropies.append(entropy_val)

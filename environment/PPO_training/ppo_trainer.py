@@ -10,8 +10,9 @@ class PPOTrainer:
         self.clip_eps = clip_eps
         self.gamma = gamma
         self.lam = lam
-        self.entropy_coef = 0.05
-        self.entropy_anneal_rate = 0.00005
+        self.entropy_coef = 0.01
+        self.entropy_anneal_rate = 0.00001
+        self._current_episode = 0
 
     def compute_gae(self, rewards, values, dones):
         advantages = []
@@ -27,7 +28,10 @@ class PPOTrainer:
         returns = advantages + np.array(values)
         return advantages, returns
 
-    def ppo_update(self, obs, actions, log_probs_old, returns, advantages, epochs=10, batch_size=64):
+    def ppo_update(self, obs, actions, log_probs_old, returns, advantages, epochs=10, batch_size=64, current_episode=None):
+        if current_episode is not None:
+            self._current_episode = current_episode
+
         obs = torch.tensor(obs, dtype=torch.float32)
         actions = torch.tensor(actions, dtype=torch.float32)
         log_probs_old = torch.tensor(log_probs_old, dtype=torch.float32)
@@ -65,7 +69,11 @@ class PPOTrainer:
                 value_losses.append(value_loss.item())
                 entropy_vals.append(entropy.mean().item())
 
-        self.entropy_coef = max(0.001, self.entropy_coef - self.entropy_anneal_rate)
+        if self._current_episode < 600:
+            self.entropy_coef = max(0.001, self.entropy_coef - self.entropy_anneal_rate)
+        else:
+            self.entropy_coef = max(self.entropy_coef, 0.01)  # freeze decay
+
         return np.mean(policy_losses), np.mean(value_losses), np.mean(entropy_vals)
 
 
