@@ -12,7 +12,7 @@ import numpy as np
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from rule_based_ai_agent_v31 import AI_script_v31 as script
-from environment.rlagent import RLAgent
+from environment.rlagent_leaky import RLAgent
 
 env = AirHockeyBase()
 
@@ -96,7 +96,7 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
         mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (
                     float(data.xpos[paddle_id2][1] * 1000) + 519)
 
-        noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.05 else 0
+        noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.2 else 0
         action1 = agent.predict(obs) # + noise
         action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
         action2 = np.array([-action2[0], -action2[1]])
@@ -121,7 +121,7 @@ with (mujoco.viewer.launch_passive(model, data) as viewer):
         #     print(obs)
         step += 1
 
-        if step % 250 == 0 or absorbing:
+        if step % 50 == 0 or absorbing:
             if reward_buffer:  # Only train if we have something
                 reward_buffer = [r if r is not None else 0.0 for r in reward_buffer]
                 returns = compute_returns(reward_buffer)

@@ -66,7 +66,8 @@ class AirHockeyBase(MuJoCo):
         self.env_info = dict()
         self.env_info['table'] = {"length": 1.948, "width": 1.038, "goal_width": 0.25}
         self.env_info['puck'] = {"radius": 0.03165}
-        self.env_info['mallet'] = {"radius": 0.04815}
+        #changed from original 0.04815 to 0.05
+        self.env_info['mallet'] = {"radius": 0.05}
         self.env_info['n_agents'] = self.n_agents
 
         self.env_info['puck_pos_ids'] = [0, 1, 2]
@@ -93,7 +94,8 @@ class AirHockeyBase(MuJoCo):
 
             # Bonus for hitting the puck
             if self.is_colliding(next_obs, 'puck', 'paddle_left'):
-                reward += 30.0
+                print("collision detected")
+                reward += 50.0
 
             # Opponent goal
             if absorbing:
@@ -103,12 +105,12 @@ class AirHockeyBase(MuJoCo):
             # Bonus if moving toward the puck
             dx, dy = puck_pos - mallet_pos
             mvx, mvy = mallet_vel
-            if (dx * mvx >= 0) and (dy * mvy >= 0):
-                reward += 0.05
+            if (dx * mvx >= 0.00001) and (dy * mvy >= 0.00001):
+                reward += 0.1
 
         # Mallet on opponents side
         if mallet_pos[0] > 0:
-            return -1
+            reward -= 0.1
 
         # Puck on opponents side
         if puck_pos[0] > 0:
