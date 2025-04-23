@@ -108,6 +108,10 @@ class AirHockeyBase(MuJoCo):
             if (dx * mvx >= 0.00001) and (dy * mvy >= 0.00001):
                 reward += 0.1
 
+        if self.mallet_rim_collision(next_obs):
+            reward -= 0.1
+            print("penalty")
+
         # Mallet on opponents side
         if mallet_pos[0] > 0:
             reward -= 0.1
@@ -183,6 +187,19 @@ class AirHockeyBase(MuJoCo):
         min_distance = radius[obj1] + radius[obj2]
 
         return distance <= min_distance
+
+    def mallet_rim_collision(self, obs):
+        mallet_pos, _ = self.get_mallet(obs)
+        table_length = self.env_info['table']['length'] / 2
+        table_width = self.env_info['table']['width'] / 2
+        margin = 0.0501
+        x_too_close = abs(mallet_pos[0]) >= (table_length - margin)
+        y_too_close = abs(mallet_pos[1]) >= (table_width - margin)
+        print(abs(mallet_pos[0]), table_length - margin, abs(mallet_pos[1]), table_width - margin)
+        if x_too_close or y_too_close:
+            return True
+        else:
+            return False
 
     def _randomize_puck_position(self):
         # Sample random position
