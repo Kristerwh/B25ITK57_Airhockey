@@ -109,8 +109,7 @@ class AirHockeyBase(MuJoCo):
                 reward += 0.1
 
         if self.mallet_rim_collision(next_obs):
-            reward -= 0.1
-            print("penalty")
+            reward -= 0.05
 
         # Mallet on opponents side
         if mallet_pos[0] > 0:
@@ -195,7 +194,6 @@ class AirHockeyBase(MuJoCo):
         margin = 0.0501
         x_too_close = abs(mallet_pos[0]) >= (table_length - margin)
         y_too_close = abs(mallet_pos[1]) >= (table_width - margin)
-        print(abs(mallet_pos[0]), table_length - margin, abs(mallet_pos[1]), table_width - margin)
         if x_too_close or y_too_close:
             return True
         else:
