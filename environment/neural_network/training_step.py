@@ -87,6 +87,7 @@ def strip_z(obs):
 
 try:
     with (mujoco.viewer.launch_passive(model, data) as viewer):
+        agent.load("saved/model_rl.keras")
         mujoco.mj_step(model, data)
         obs = strip_z(env.reset())
         step = 0
@@ -98,8 +99,8 @@ try:
             mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + 974, float(data.xpos[paddle_id][1] * 1000) + 519
             mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (float(data.xpos[paddle_id2][1] * 1000) + 519)
 
-            noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.2 else 0
-            action1 = agent.predict(obs)
+            noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.03 else 0
+            action1 = agent.predict(obs) + noise
             action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
             action2 = np.array([-action2[0], -action2[1]])
             action = np.concatenate((action1, action2))
@@ -120,7 +121,7 @@ try:
 
             step += 1
 
-            if step % 50 == 0 or absorbing:
+            if step % 300 == 0 or absorbing:
                 if reward_buffer: # Only train if we have something
                     reward_buffer = [r if r is not None else 0.0 for r in reward_buffer]
                     returns = compute_returns(reward_buffer)
@@ -142,11 +143,11 @@ try:
                     print(f"Lagret modell etter {episode} episoder")
                     episode = 0
 
-                if absorbing or step >= 10000:
+                if absorbing or step >= 600:
                     obs = strip_z(env.reset())
                     step = 0
                     episode += 1
-                    print(f"Episode {episode} done. Total reward: {np.sum(reward_buffer):.2f}, Loss: {loss:.4f}")
+                    print(f"Episode {episode} done.")
                 obs = strip_z(next_obs)
             else:
                 obs = strip_z(next_obs)
