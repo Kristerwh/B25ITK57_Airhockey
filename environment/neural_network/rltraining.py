@@ -1,7 +1,7 @@
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from tqdm import trange
 import numpy as np
-from environment.rlagent import RLAgent
+from environment.neural_network.rlagent import RLAgent
 
 env = AirHockeyBase()
 input_shape = len(env.get_all_observation_keys())

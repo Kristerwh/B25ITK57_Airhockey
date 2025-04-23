@@ -1,7 +1,6 @@
 import sys
 import os
 import numpy as np
-import tensorflow as tf
 import mujoco
 import mujoco.viewer
 
@@ -9,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
-from environment.rlagent import RLAgent
+from environment.neural_network.rlagent import RLAgent
 from rule_based_ai_agent_v31 import AI_script_v31 as script
 
 # Initialize environment and models
