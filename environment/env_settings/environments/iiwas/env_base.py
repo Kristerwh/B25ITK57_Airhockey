@@ -95,12 +95,12 @@ class AirHockeyBase(MuJoCo):
             # Bonus for hitting the puck
             if self.is_colliding(next_obs, 'puck', 'paddle_left'):
                 print("collision detected")
-                reward += 50.0
+                reward += 20
 
             # Opponent goal
             if absorbing:
                 print("Opponent Scores!")
-                reward -= 50
+                reward -= 30
 
             # Bonus if moving toward the puck
             dx, dy = puck_pos - mallet_pos
@@ -126,9 +126,19 @@ class AirHockeyBase(MuJoCo):
     # TODO
     # MODIFIED MUST BE LOOKED INTO
     def _modify_mdp_info(self, mdp_info):
-        obs_low = np.array([-1.0, -0.5, -5.0, -5.0, -1.0, -0.5])  # Min values for mallet & puck
-        obs_high = np.array([1.0, 0.5, 5.0, 5.0, 1.0, 0.5])  # Max values for mallet & puck
-        mdp_info.observation_space = Box(obs_low, obs_high)
+        self.obs_low = np.array([
+            -1.0, -0.5,  # puck_pos
+            -5.0, -5.0,  # puck_vel
+            -1.0, -0.5,  # mallet_pos
+            -5.0, -5.0  # mallet_vel
+        ])
+        self.obs_high = np.array([
+            1.0, 0.5,  # puck_pos
+            5.0, 5.0,  # puck_vel
+            1.0, 0.5,  # mallet_pos
+            5.0, 5.0  # mallet_vel
+        ])
+        mdp_info.observation_space = Box(self.obs_low, self.obs_high)
         return mdp_info
 
     def is_absorbing(self, obs):
@@ -188,13 +198,14 @@ class AirHockeyBase(MuJoCo):
         return distance <= min_distance
 
     def mallet_rim_collision(self, obs):
+        boundary = np.array([self.env_info['table']['length'], self.env_info['table']['width']]) / 2
         mallet_pos, _ = self.get_mallet(obs)
         table_length = self.env_info['table']['length'] / 2
         table_width = self.env_info['table']['width'] / 2
         margin = 0.0501
         x_too_close = abs(mallet_pos[0]) >= (table_length - margin)
         y_too_close = abs(mallet_pos[1]) >= (table_width - margin)
-        if x_too_close or y_too_close:
+        if x_too_close or y_too_close or np.any(np.abs(mallet_pos) > boundary):
             return True
         else:
             return False
@@ -202,21 +213,21 @@ class AirHockeyBase(MuJoCo):
     def _randomize_puck_position(self):
         # Sample random position
         min_dist = 0.5
+        max_dist = 0.5005
         while True:
             x = np.random.uniform(*(-0.45, 0.05))
             y = np.random.uniform(*(-0.4, 0.4))
             mx = np.random.uniform(*(-0.45, 0.1)) + 0.35
             my = np.random.uniform(*(-0.4, 0.4))
-            distance = np.linalg.norm([x - mx, y - my])
-            if distance >= min_dist:
+            x_shifted = x + 0.35
+            distance = np.linalg.norm([x_shifted - mx, y - my])
+            if min_dist <= distance <= max_dist:
                 break  # valid sample
 
 
         # Set the puck position directly in MuJoCo
-        puck_body_id = self._model.body("puck").id
         self._data.qpos[self._model.jnt("puck_x").qposadr] = x
         self._data.qpos[self._model.jnt("puck_y").qposadr] = y
-        mallet_body_id = self._model.body("paddle_left").id
         self._data.qpos[self._model.jnt("paddle_left_x").qposadr] = mx
         self._data.qpos[self._model.jnt("paddle_left_y").qposadr] = my
 

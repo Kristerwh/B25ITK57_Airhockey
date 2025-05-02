@@ -15,6 +15,7 @@ from environment.env_settings.environments.position_controller_mallet_wrapper im
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from rule_based_ai_agent_v31 import AI_script_v31 as script
 from environment.neural_network.rlagent_leaky import RLAgent
+from buffer import ReplayBuffer
 
 env = AirHockeyBase()
 
@@ -72,6 +73,9 @@ def compute_returns(rewards, gamma=0.99):
         returns.insert(0, G)
     return np.array(returns)
 
+def normalize(value, min_val, max_val):
+    return 2 * (value - min_val) / (max_val - min_val) - 1
+
 def strip_z(obs):
     puck_pos = env.obs_helper.get_from_obs(obs, "puck_pos")[:2]
     puck_vel = np.concatenate([
@@ -83,11 +87,13 @@ def strip_z(obs):
         env.obs_helper.get_from_obs(obs, "paddle_left_x_vel"),
         env.obs_helper.get_from_obs(obs, "paddle_left_y_vel")
     ])
-    return np.concatenate([puck_pos, puck_vel, mallet_pos, mallet_vel])
+    raw_obs = np.concatenate([puck_pos, puck_vel, mallet_pos, mallet_vel])
+    normalized_obs = 2 * (raw_obs - env.obs_low) / (env.obs_high - env.obs_low) - 1
+    return normalized_obs
 
 try:
     with (mujoco.viewer.launch_passive(model, data) as viewer):
-        agent.load("saved/model_rl.keras")
+        # agent.load("saved/model_rl.keras")
         mujoco.mj_step(model, data)
         obs = strip_z(env.reset())
         step = 0
@@ -99,7 +105,7 @@ try:
             mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + 974, float(data.xpos[paddle_id][1] * 1000) + 519
             mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (float(data.xpos[paddle_id2][1] * 1000) + 519)
 
-            noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.03 else 0
+            noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.005 else 0
             action1 = agent.predict(obs) + noise
             action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
             action2 = np.array([-action2[0], -action2[1]])
@@ -121,7 +127,7 @@ try:
 
             step += 1
 
-            if step % 300 == 0 or absorbing:
+            if step % 500 == 0 or absorbing:
                 if reward_buffer: # Only train if we have something
                     reward_buffer = [r if r is not None else 0.0 for r in reward_buffer]
                     returns = compute_returns(reward_buffer)
@@ -143,7 +149,7 @@ try:
                     print(f"Lagret modell etter {episode} episoder")
                     episode = 0
 
-                if absorbing or step >= 600:
+                if absorbing or step >= 500:
                     obs = strip_z(env.reset())
                     step = 0
                     episode += 1

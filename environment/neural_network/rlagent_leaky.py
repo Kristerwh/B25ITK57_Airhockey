@@ -16,13 +16,11 @@ class RLAgent:
     def _build_model(self):
         return Sequential([
             Input(shape=(self.input_shape,)),
-            Dense(16), LeakyReLU(alpha=0.01),
-            Dense(32), LeakyReLU(alpha=0.01),
             Dense(64), LeakyReLU(alpha=0.01),
-            Dense(32), LeakyReLU(alpha=0.01),
-            Dense(16), LeakyReLU(alpha=0.01),
-            Dense(8), LeakyReLU(alpha=0.01),
-            Dense(4), LeakyReLU(alpha=0.01),
+            Dense(128), LeakyReLU(alpha=0.01),
+            Dense(256), LeakyReLU(alpha=0.01),
+            Dense(128), LeakyReLU(alpha=0.01),
+            Dense(64), LeakyReLU(alpha=0.01),
             Dense(self.action_output, activation="linear", name="output_layer")
         ])
 
@@ -38,13 +36,26 @@ class RLAgent:
 
     @tf.function
     def _train_step(self, obs_batch, action_batch, returns):
+        # Calculate advantages from baseline
+        advantages = returns - tf.reduce_mean(returns)
+
         with tf.GradientTape() as tape:
             predictions = self.model(obs_batch, training=True)
+
+            # MSE between predicted and taken action
             loss_elements = tf.reduce_sum(tf.square(predictions - action_batch), axis=1)
-            base_loss = tf.reduce_mean(loss_elements * returns)
+
+            # Weight MSE by advantage instead of raw returns
+            base_loss = tf.reduce_mean(loss_elements * advantages)
+
+            # Add small entropy bonus to encourage exploration
             entropy = -tf.reduce_mean(tf.math.log(tf.abs(predictions) + 1e-6))
             entropy_bonus = 0.001 * entropy
+
+            # Final loss
             loss = base_loss - entropy_bonus
+
+        # Compute and apply gradients
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
         return loss

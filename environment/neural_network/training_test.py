@@ -76,7 +76,7 @@ def strip_z(obs):
     return np.concatenate([puck_pos, puck_vel, mallet_pos, mallet_vel])
 
 with (mujoco.viewer.launch_passive(model, data) as viewer):
-    # agent.load("saved/model_rl.keras")
+    agent.load("saved/model_rl.keras")
     mujoco.mj_step(model, data)
     obs = strip_z(env.reset())
     step = 0
