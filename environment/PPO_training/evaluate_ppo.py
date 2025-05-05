@@ -42,10 +42,19 @@ def main(render=True, episodes=50, delay=0.01):
 
     results = []
     total_rewards = []
+    total_hits = 0
+    total_goals_scored = 0
+    total_goals_conceded = 0
 
     def run_one_episode():
+        nonlocal total_hits, total_goals_scored, total_goals_conceded
+
         obs = strip_z(reset_env_centered(env), env)
+        initial_puck_x = float(data.xpos[puck_id][0])
         episode_reward = 0
+        hit_count = 0
+        goal_scored = 0
+        goal_conceded = 0
         done = False
         steps = 0
 
@@ -65,6 +74,13 @@ def main(render=True, episodes=50, delay=0.01):
 
             next_obs_raw, reward, done, _ = env.step(action1)
             obs = strip_z(next_obs_raw, env)
+            if hasattr(env, "is_colliding") and env.is_colliding(next_obs_raw, 'puck', 'paddle_left'):
+                hit_count += 1
+            if float(data.xpos[puck_id][0]) > 0.95:
+                goal_scored += 1
+            elif float(data.xpos[puck_id][0]) < -0.95:
+                goal_conceded += 1
+
             episode_reward += reward
 
             mujoco.mj_step(model, data)
@@ -75,6 +91,10 @@ def main(render=True, episodes=50, delay=0.01):
             steps += 1
 
         total_rewards.append(episode_reward)
+        total_hits += hit_count
+        total_goals_scored += goal_scored
+        total_goals_conceded += goal_conceded
+
         if reward > 0:
             results.append("Win")
         elif reward < 0:
@@ -97,6 +117,10 @@ def main(render=True, episodes=50, delay=0.01):
     print(f"Losses: {results.count('Loss')}")
     print(f"Draws:  {results.count('Draw')}")
     print(f"Average Reward: {np.mean(total_rewards):.2f}")
+    print(f"Average Hits per Episode: {total_hits / episodes:.2f}")
+    print(f"Goals Scored per Episode: {total_goals_scored / episodes:.2f}")
+    print(f"Goals Conceded per Episode: {total_goals_conceded / episodes:.2f}")
+
 
 if __name__ == "__main__":
     main(render=True, episodes=50, delay=0.01)

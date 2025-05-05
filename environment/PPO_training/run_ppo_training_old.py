@@ -6,7 +6,7 @@ from datetime import datetime
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.PPO_training.ppo_trainer import PPOTrainer
-from environment.PPO_training.ppo_rewards import ppo_reward
+from environment.PPO_training.ppo_rewards import ppo_reward, phase1_reward
 from rule_based_ai_agent_v31 import AI_script_v31 as script
 import mujoco
 import mujoco.viewer
@@ -50,7 +50,7 @@ def main(render=True):
     obs_dim = 8
     act_dim = 2
     trainer = PPOTrainer(obs_dim, act_dim)
-    total_episodes = 500
+    total_episodes = 1000
     rollout_len = 500
 
     reward_log = []
@@ -58,25 +58,22 @@ def main(render=True):
 
     def run_episode(ep):
         obs = strip_z(reset_env_centered(env), env)
-        if ep < 200 or (600 <= ep < 620):
-            env._data.qvel[0:2] = 0
-            env._data.qpos[0:2] = 0
-            mujoco.mj_forward(env._model, env._data)
-
         obs_buf, act_buf, logp_buf, rew_buf, val_buf, done_buf = [], [], [], [], [], []
         episode_reward = 0
-        use_scripted = (ep >= 200)
+
+        #curriculum tingy phase, saw it on a guide, supposedly AI learns how to move in the first 200episdes,then plays vs opponent after 200
+        use_scripted = (ep < 200)
 
         for step in range(rollout_len):
             action1, log_prob = trainer.act(obs)
-            action1 = np.clip(action1, -100, 100)
+            action1 = np.clip(action1, -100, 100)  # clamp action range
             value = trainer.evaluate(obs)
 
             puck_pos = float(data.xpos[puck_id][0]) * 1000 + 974, float(data.xpos[puck_id][1]) * 1000 + 519
             puck_pos_reverted = 2 * 974 - puck_pos[0], 2 * 519 - puck_pos[1]
             mallet2_pos = 2 * 974 - (float(data.xpos[paddle_id2][0]) * 1000 + 974), \
                           2 * 519 - (float(data.xpos[paddle_id2][1]) * 1000 + 519)
-            action2 = script.run(scripted_ai, puck_pos_reverted, mallet2_pos) if use_scripted else np.zeros(2)
+            action2 = script.run(scripted_ai, puck_pos_reverted, mallet2_pos) if not use_scripted else np.zeros(2)
             action2 = np.array([-action2[0], -action2[1]])
 
             full_action = np.concatenate([action1, action2])
@@ -86,7 +83,7 @@ def main(render=True):
             next_obs_raw, _, done, _ = env.step(action1)
             next_obs = strip_z(next_obs_raw, env)
 
-            reward = ppo_reward(obs, action1, next_obs, done, env, ep=ep)
+            reward = ppo_reward(obs, action1, next_obs, done, env)
             episode_reward += reward
 
             obs_buf.append(obs)
@@ -107,7 +104,7 @@ def main(render=True):
 
         reward_log.append(episode_reward)
         advantages, returns = trainer.compute_gae(rew_buf, val_buf, done_buf)
-        pol_loss, val_loss, entropy_val = trainer.ppo_update(obs_buf, act_buf, logp_buf, returns, advantages, current_episode=ep)
+        pol_loss, val_loss, entropy_val = trainer.ppo_update(obs_buf, act_buf, logp_buf, returns, advantages)
         policy_losses.append(pol_loss)
         value_losses.append(val_loss)
         entropies.append(entropy_val)
@@ -133,6 +130,7 @@ def main(render=True):
                 print(f"Episode {episode + 1}: avg reward (last 50 eps) = {avg_reward:.2f}")
                 trainer.save("PPO_training_saved_models/saved_model")
 
+    # Final Matplotlib plots
     plt.figure()
     plt.plot(reward_log, label='Reward')
     plt.xlabel('Episode')
