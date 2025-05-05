@@ -8,6 +8,8 @@ from environment.env_settings.environments.position_controller_mallet_wrapper im
 from environment.PPO_training.ppo_trainer import PPOTrainer
 from environment.PPO_training.ppo_rewards import phase1_reward, phase2_reward, phase3_reward
 from rule_based_ai_agent_v31 import AI_script_v31 as script
+from environment.env_settings.environments.iiwas.env_base import is_colliding_ppo
+from environment.env_settings.environments.position_controller_mallet_wrapper import apply_action_ppo
 import mujoco
 import mujoco.viewer
 from torch.utils.tensorboard import SummaryWriter
@@ -27,10 +29,24 @@ def strip_z(obs, env):
 
 def reset_env_centered(env):
     obs = env.reset()
-    env._data.qpos[:2] = 0
-    env._data.qvel[:2] = 0
+
+    # Set puck at center
+    env._data.qpos[env._model.jnt("puck_x").qposadr] = -0.3
+    env._data.qpos[env._model.jnt("puck_y").qposadr] = 0.0
+
+    # Set mallet away from puck
+    env._data.qpos[env._model.jnt("paddle_left_x").qposadr] = -0.10
+    env._data.qpos[env._model.jnt("paddle_left_y").qposadr] = 0.0
+
+    # Zero out puck and mallet velocities
+    env._data.qvel[env._model.jnt("puck_x").dofadr] = 0
+    env._data.qvel[env._model.jnt("puck_y").dofadr] = 0
+    env._data.qvel[env._model.jnt("paddle_left_x").dofadr] = 0
+    env._data.qvel[env._model.jnt("paddle_left_y").dofadr] = 0
+
     mujoco.mj_forward(env._model, env._data)
-    return obs
+    return env._create_observation(env.obs_helper._build_obs(env._data))
+
 
 def main(render=True):
     env = AirHockeyBase()
@@ -57,6 +73,7 @@ def main(render=True):
     policy_losses, value_losses, entropies = [], [], []
 
     def run_episode(ep):
+        env.prev_action = np.zeros(2)  # Reset PPO action history
         obs = strip_z(reset_env_centered(env), env)
         if ep < 200 or (600 <= ep < 620):
             env._data.qvel[0:2] = 0
@@ -80,7 +97,8 @@ def main(render=True):
             action2 = np.array([-action2[0], -action2[1]])
 
             full_action = np.concatenate([action1, action2])
-            control = controller.apply_action(full_action)
+            control = apply_action_ppo(full_action)  # <- REPLACED
+
             data.ctrl[:] = control
 
             next_obs_raw, _, done, _ = env.step(action1)
@@ -108,7 +126,7 @@ def main(render=True):
                 mujoco.mj_step(model, data)
                 viewer.sync()
 
-            if hasattr(env, "is_colliding") and env.is_colliding(next_obs_raw, 'puck', 'paddle_left'):
+            if is_colliding_ppo(next_obs[0:2], next_obs[4:6]):  # <- REPLACED
                 writer.add_scalar("Hit", 1, ep)
             if next_obs[0] > 0 and done:
                 writer.add_scalar("Goal", 1, ep)

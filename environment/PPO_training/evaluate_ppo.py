@@ -1,4 +1,3 @@
-import time
 import numpy as np
 import mujoco
 import mujoco.viewer
@@ -22,12 +21,22 @@ def strip_z(obs, env):
 
 def reset_env_centered(env):
     obs = env.reset()
-    env._data.qpos[:2] = 0
-    env._data.qvel[:2] = 0
-    mujoco.mj_forward(env._model, env._data)
-    return obs
 
-def main(render=True, episodes=50, delay=0.01):
+    # Set puck and mallet positions explicitly with spacing
+    env._data.qpos[env._model.jnt("puck_x").qposadr] = -0.3
+    env._data.qpos[env._model.jnt("puck_y").qposadr] = 0.0
+    env._data.qpos[env._model.jnt("paddle_left_x").qposadr] = -0.5
+    env._data.qpos[env._model.jnt("paddle_left_y").qposadr] = 0.0
+
+    env._data.qvel[env._model.jnt("puck_x").dofadr] = 0
+    env._data.qvel[env._model.jnt("puck_y").dofadr] = 0
+    env._data.qvel[env._model.jnt("paddle_left_x").dofadr] = 0
+    env._data.qvel[env._model.jnt("paddle_left_y").dofadr] = 0
+
+    mujoco.mj_forward(env._model, env._data)
+    return env._create_observation(env.obs_helper._build_obs(env._data))
+
+def main(render=True, episodes=50):
     env = AirHockeyBase()
     controller = MalletControl(env_info=env.env_info, debug=False)
     model = env._model
@@ -50,15 +59,15 @@ def main(render=True, episodes=50, delay=0.01):
         nonlocal total_hits, total_goals_scored, total_goals_conceded
 
         obs = strip_z(reset_env_centered(env), env)
-        initial_puck_x = float(data.xpos[puck_id][0])
         episode_reward = 0
         hit_count = 0
         goal_scored = 0
         goal_conceded = 0
+        steps_since_last_hit = 0
         done = False
-        steps = 0
+        max_steps = 5000  # longer than usual to allow for passive play
 
-        while not done and steps < 500:
+        for step in range(max_steps):
             puck_pos = float(data.xpos[puck_id][0]) * 1000 + 974, float(data.xpos[puck_id][1]) * 1000 + 519
             puck_pos_reverted = 2 * 974 - puck_pos[0], 2 * 519 - puck_pos[1]
             mallet2_pos = 2 * 974 - (float(data.xpos[paddle_id2][0]) * 1000 + 974), \
@@ -72,32 +81,41 @@ def main(render=True, episodes=50, delay=0.01):
             control_action = controller.apply_action(full_action)
             data.ctrl[:4] = control_action[:4]
 
-            next_obs_raw, reward, done, _ = env.step(action1)
+            next_obs_raw, reward, _, _ = env.step(action1)
             obs = strip_z(next_obs_raw, env)
+
             if hasattr(env, "is_colliding") and env.is_colliding(next_obs_raw, 'puck', 'paddle_left'):
                 hit_count += 1
-            if float(data.xpos[puck_id][0]) > 0.95:
+                steps_since_last_hit = 0
+            else:
+                steps_since_last_hit += 1
+
+            puck_x = float(data.xpos[puck_id][0])
+            if puck_x > 0.95:
                 goal_scored += 1
-            elif float(data.xpos[puck_id][0]) < -0.95:
+                done = True
+            elif puck_x < -0.95:
                 goal_conceded += 1
+                done = True
+            elif steps_since_last_hit > 10000:  # 10 seconds of no touch
+                done = True
 
             episode_reward += reward
-
             mujoco.mj_step(model, data)
             if render:
                 viewer.sync()
-                time.sleep(delay)
 
-            steps += 1
+            if done:
+                break
 
         total_rewards.append(episode_reward)
         total_hits += hit_count
         total_goals_scored += goal_scored
         total_goals_conceded += goal_conceded
 
-        if reward > 0:
+        if goal_scored > goal_conceded:
             results.append("Win")
-        elif reward < 0:
+        elif goal_scored < goal_conceded:
             results.append("Loss")
         else:
             results.append("Draw")
@@ -121,6 +139,5 @@ def main(render=True, episodes=50, delay=0.01):
     print(f"Goals Scored per Episode: {total_goals_scored / episodes:.2f}")
     print(f"Goals Conceded per Episode: {total_goals_conceded / episodes:.2f}")
 
-
 if __name__ == "__main__":
-    main(render=True, episodes=50, delay=0.01)
+    main(render=True, episodes=50)

@@ -239,3 +239,12 @@ class AirHockeyBase(MuJoCo):
         # Recreate observation from updated state
         self._obs = self._create_observation(self.obs_helper._build_obs(self._data))
         return self._obs
+
+
+#for ppo agent
+def is_colliding_ppo(puck_pos, mallet_pos, puck_radius=0.03165, mallet_radius=0.05, velocity_threshold=0.05):
+    """ Collision detection with additional PPO-safe rules """
+    distance = np.linalg.norm(puck_pos - mallet_pos)
+    touching = distance <= (puck_radius + mallet_radius)
+    safe = distance > 0.01
+    return touching and safe
