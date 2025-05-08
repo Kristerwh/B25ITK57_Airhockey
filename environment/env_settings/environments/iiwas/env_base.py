@@ -49,7 +49,7 @@ class AirHockeyBase(MuJoCo):
                 ("paddle_left", ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
 
         else:  # Two-player mode
-            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "two_player.xml")  # Load updated XML
+            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "double.xml")  # Load updated XML
             action_spec += ["left_mallet_x_motor", "left_mallet_y_motor",
                             "right_mallet_x_motor", "right_mallet_y_motor"]
             additional_data += [("paddle_right_x_pos", "paddle_right_x", ObservationType.JOINT_POS),
@@ -94,7 +94,7 @@ class AirHockeyBase(MuJoCo):
 
             # Bonus for hitting the puck
             if self.is_colliding(next_obs, 'puck', 'paddle_left'):
-                print("collision detected")
+                #print("collision detected")
                 reward += 20
 
             # Opponent goal
@@ -239,3 +239,21 @@ class AirHockeyBase(MuJoCo):
         # Recreate observation from updated state
         self._obs = self._create_observation(self.obs_helper._build_obs(self._data))
         return self._obs
+
+    # for ai vs human
+    @staticmethod
+    def is_absorbing_ui(obs):
+        puck_x, puck_y = obs[0], obs[1]
+        table_width = 0.609
+        goal_trigger_x = 1.515  # updated from 0.99
+
+        return abs(puck_y) <= table_width and abs(puck_x) >= goal_trigger_x
+
+
+#for ppo agent
+def is_colliding_ppo(puck_pos, mallet_pos, puck_radius=0.03165, mallet_radius=0.05, velocity_threshold=0.05):
+    """ Collision detection with additional PPO-safe rules """
+    distance = np.linalg.norm(puck_pos - mallet_pos)
+    touching = distance <= (puck_radius + mallet_radius)
+    safe = distance > 0.01
+    return touching and safe

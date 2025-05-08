@@ -15,7 +15,10 @@
         <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5"
                   reflectance="0.2"/>
 
-         <mesh name="rim" file="assets/table_rim.stl" scale="0.001 0.001 0.001" smoothnormal="true"/>
+        <mesh name="rim" file="table_rim.stl" scale="0.001 0.001 0.001" smoothnormal="true"/>
+
+        <material name="goal_red" specular="0.5" shininess="0.25" rgba="1.0 0.0 0.0 1"/>
+        <material name="goal_blue" specular="0.5" shininess="0.25" rgba="0.0 0.0 1.0 1"/>
     </asset>
 
     <default>
@@ -27,6 +30,10 @@
     </default>
 
     <worldbody>
+        <!--Goal areas, currently red and blue to see if its in correct positions, we can change material to ''transparent'' later-->
+        <site name="goal_left" pos="-1.019 0 0" size="0.01 0.122 0.01" type="box" material="goal_red"/>
+        <site name="goal_right" pos="1.019 0 0" size="0.01 0.122 0.01" type="box" material="goal_blue"/>'
+
         <body name="table">
             <body name="table_surface">
                 <geom name="surface" type="box" material="white" size="1.064 0.609 0.0505" pos="0 0 -0.0505"
@@ -57,12 +64,12 @@
         </body>
 
         <body name="base" pos="-0.4 0 0">
-            <joint name="puck_x" type="slide" axis="1 0 0" damping="0.005" limited="false"/>
-            <joint name="puck_y" type="slide" axis="0 1 0" damping="0.005" limited="false"/>
+            <joint name="puck_x" type="slide" axis="1 0 0" damping="0.001" limited="false"/>
+            <joint name="puck_y" type="slide" axis="0 1 0" damping="0.001" limited="false"/>
             <joint name="puck_yaw" type="hinge" axis="0 0 1" damping="2e-6" limited="false"/>
             <body name="puck">
-                <geom pos="0 0 0.01" name="puck" type="cylinder" rgba="0 0 0 0" size="0.03165 0.01"
-                      condim="4" priority="0"/>
+                <geom pos="0 0 0.005" name="puck" type="cylinder" rgba="0 0 0 0" size="0.03165 0.005" friction="0.1 0.1 0.1"
+                      condim="6" priority="0"/>
                 <site pos="0 0 0.003" name="puck_site" type="cylinder" material="red" size="0.03165 0.003"/>
                 <site pos="0.02 0 0.003" type="cylinder" material="blue" size="0.01 0.0031"/>
                 <inertial pos="0 0 0" mass="0.01" diaginertia="2.5e-6 2.5e-6 5e-6"/>
@@ -72,23 +79,31 @@
         <site name="puck_vis" type="ellipsoid" size="0.03165 0.03165 0.004" pos="0 0 -0.05"/>
         <site name="puck_vis_rot" type="cylinder" size="0.0045 0.006" rgba="1 0 0 1" pos="0 0 -0.05"/>
 
-        <body name="paddle1" pos="-0.5 0 0.01">
-            <joint name="paddle1_x" type="slide" axis="1 0 0" damping="0.005" limited="true" range="-0.5 0.5"/>
-            <joint name="paddle1_y" type="slide" axis="0 1 0" damping="0.005" limited="true" range="-0.3 0.3"/>
-            <geom name="paddle1" type="cylinder" material="red" size="0.05 0.01" condim="4" priority="0"/>
-            <inertial pos="0 0 0" mass="0.1" diaginertia="1e-3 1e-3 1e-3"/>
+        <body name="paddle_left" pos="-0.8 0 0.012">
+            <joint name="paddle_left_x" type="slide" axis="1 0 0" damping="2.0001"/>
+            <joint name="paddle_left_y" type="slide" axis="0 1 0" damping="2.0001"/>
+            <geom name="paddle_left" type="cylinder" size="0.05 0.02" mass="0.2" friction="0.02 0.02 0.0" material="red" condim="6"/>
         </body>
 
-        <body name="paddle2" pos="0.5 0 0.01">
-            <joint name="paddle2_x" type="slide" axis="1 0 0" damping="0.005" limited="true" range="-0.5 0.5"/>
-            <joint name="paddle2_y" type="slide" axis="0 1 0" damping="0.005" limited="true" range="-0.3 0.3"/>
-            <geom name="paddle2" type="cylinder" material="blue" size="0.05 0.01" condim="4" priority="0"/>
-            <inertial pos="0 0 0" mass="0.1" diaginertia="1e-3 1e-3 1e-3"/>
+        <body name="paddle_right" pos="0.8 0 0.012">
+            <joint name="paddle_right_x" type="slide" axis="1 0 0" damping="2.0001"/>
+            <joint name="paddle_right_y" type="slide" axis="0 1 0" damping="2.0001"/>
+            <geom name="paddle_right" type="cylinder" size="0.05 0.02" mass="0.2" friction="0.02 0.02 0.0" material="blue" condim="6"/>
         </body>
+
+
     </worldbody>
+    <actuator>
+        <motor name="left_mallet_x_motor" joint="paddle_left_x" ctrllimited="true" ctrlrange="-50 50"/>
+        <motor name="left_mallet_y_motor" joint="paddle_left_y" ctrllimited="true" ctrlrange="-50 50"/>
+        <motor name="right_mallet_x_motor" joint="paddle_right_x" ctrllimited="true" ctrlrange="-50 50"/>
+        <motor name="right_mallet_y_motor" joint="paddle_right_y" ctrllimited="true" ctrlrange="-50 50"/>
+    </actuator>
 
     <contact>
         <exclude body1="puck" body2="table_surface"/>
+        <exclude body1="paddle_left" body2="table_surface"/>
+        <exclude body1="paddle_right" body2="table_surface"/>
     </contact>
 
     <worldbody>
