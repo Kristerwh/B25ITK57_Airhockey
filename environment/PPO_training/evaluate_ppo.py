@@ -22,10 +22,10 @@ def strip_z(obs, env):
 def reset_env_centered(env):
     obs = env.reset()
 
-    # Set puck and mallet positions explicitly with spacing
+    #puck and mallet positions
     env._data.qpos[env._model.jnt("puck_x").qposadr] = -0.3
     env._data.qpos[env._model.jnt("puck_y").qposadr] = 0.0
-    env._data.qpos[env._model.jnt("paddle_left_x").qposadr] = -0.5
+    env._data.qpos[env._model.jnt("paddle_left_x").qposadr] = -0.1
     env._data.qpos[env._model.jnt("paddle_left_y").qposadr] = 0.0
 
     env._data.qvel[env._model.jnt("puck_x").dofadr] = 0
@@ -65,7 +65,7 @@ def main(render=True, episodes=50):
         goal_conceded = 0
         steps_since_last_hit = 0
         done = False
-        max_steps = 5000  # longer than usual to allow for passive play
+        max_steps = 5000
 
         for step in range(max_steps):
             puck_pos = float(data.xpos[puck_id][0]) * 1000 + 974, float(data.xpos[puck_id][1]) * 1000 + 519
@@ -97,7 +97,7 @@ def main(render=True, episodes=50):
             elif puck_x < -0.95:
                 goal_conceded += 1
                 done = True
-            elif steps_since_last_hit > 10000:  # 10 seconds of no touch
+            elif steps_since_last_hit > 10000:
                 done = True
 
             episode_reward += reward

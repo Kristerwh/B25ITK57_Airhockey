@@ -6,7 +6,9 @@ from datetime import datetime
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.PPO_training.ppo_trainer import PPOTrainer
-from environment.PPO_training.ppo_rewards import phase1_reward, phase2_reward, phase3_reward
+from environment.PPO_training.ppo_rewards2 import phase1_reward, phase2_reward, phase3_reward
+#phase4_reward, phase5_reward
+
 from rule_based_ai_agent_v31 import AI_script_v31 as script
 from environment.env_settings.environments.iiwas.env_base import is_colliding_ppo
 from environment.env_settings.environments.position_controller_mallet_wrapper import apply_action_ppo
@@ -27,18 +29,26 @@ def strip_z(obs, env):
     ])
     return np.concatenate([puck_pos, puck_vel, mallet_pos, mallet_vel])
 
-def reset_env_centered(env):
+def reset_env(env, randomize_puck=True):
     obs = env.reset()
 
-    # Set puck at center
-    env._data.qpos[env._model.jnt("puck_x").qposadr] = -0.3
-    env._data.qpos[env._model.jnt("puck_y").qposadr] = 0.0
+    if randomize_puck:
+        puck_x = np.random.uniform(-0.4, -0.1)
+        puck_y = np.random.uniform(-0.2, 0.4)
+    else:
+        puck_x = -0.3
+        puck_y = 0.0
 
-    # Set mallet away from puck
-    env._data.qpos[env._model.jnt("paddle_left_x").qposadr] = -0.10
-    env._data.qpos[env._model.jnt("paddle_left_y").qposadr] = 0.0
+    mallet_x = -0.10
+    mallet_y = 0.0
 
-    # Zero out puck and mallet velocities
+    # Set positions
+    env._data.qpos[env._model.jnt("puck_x").qposadr] = puck_x
+    env._data.qpos[env._model.jnt("puck_y").qposadr] = puck_y
+    env._data.qpos[env._model.jnt("paddle_left_x").qposadr] = mallet_x
+    env._data.qpos[env._model.jnt("paddle_left_y").qposadr] = mallet_y
+
+    # Zero velocities
     env._data.qvel[env._model.jnt("puck_x").dofadr] = 0
     env._data.qvel[env._model.jnt("puck_y").dofadr] = 0
     env._data.qvel[env._model.jnt("paddle_left_x").dofadr] = 0
@@ -46,7 +56,6 @@ def reset_env_centered(env):
 
     mujoco.mj_forward(env._model, env._data)
     return env._create_observation(env.obs_helper._build_obs(env._data))
-
 
 def main(render=True):
     env = AirHockeyBase()
@@ -66,23 +75,26 @@ def main(render=True):
     obs_dim = 8
     act_dim = 2
     trainer = PPOTrainer(obs_dim, act_dim)
-    total_episodes = 500
+    total_episodes = 1000
     rollout_len = 500
 
     reward_log = []
     policy_losses, value_losses, entropies = [], [], []
 
     def run_episode(ep):
-        env.prev_action = np.zeros(2)  # Reset PPO action history
-        obs = strip_z(reset_env_centered(env), env)
-        if ep < 200 or (600 <= ep < 620):
-            env._data.qvel[0:2] = 0
-            env._data.qpos[0:2] = 0
+        env.prev_action = np.zeros(2)
+
+        use_random_puck = ep < 500
+        obs = strip_z(reset_env(env, randomize_puck=use_random_puck), env)
+
+        if ep >= 500:
+            env._data.qpos[0:2] = -0.3, 0.0
+            env._data.qvel[0:2] = 0, 0
             mujoco.mj_forward(env._model, env._data)
 
         obs_buf, act_buf, logp_buf, rew_buf, val_buf, done_buf = [], [], [], [], [], []
         episode_reward = 0
-        use_scripted = (ep >= 200)
+        use_scripted = (ep >= 50)
 
         for step in range(rollout_len):
             action1, log_prob = trainer.act(obs)
@@ -93,21 +105,36 @@ def main(render=True):
             puck_pos_reverted = 2 * 974 - puck_pos[0], 2 * 519 - puck_pos[1]
             mallet2_pos = 2 * 974 - (float(data.xpos[paddle_id2][0]) * 1000 + 974), \
                           2 * 519 - (float(data.xpos[paddle_id2][1]) * 1000 + 519)
-            action2 = script.run(scripted_ai, puck_pos_reverted, mallet2_pos) if use_scripted else np.zeros(2)
-            action2 = np.array([-action2[0], -action2[1]])
+
+            script_noise = 0.05 if ep >= 1500 else 0.0
+            if use_scripted:
+                action2 = script.run(scripted_ai, puck_pos_reverted, mallet2_pos)
+                action2 = np.array(action2[:2], dtype=np.float32)
+                action2 += np.random.normal(0, script_noise, size=2)
+            else:
+                action2 = np.zeros(2, dtype=np.float32)
+
+            action2 = -action2
 
             full_action = np.concatenate([action1, action2])
-            control = apply_action_ppo(full_action)  # <- REPLACED
+            control = apply_action_ppo(full_action)
 
             data.ctrl[:] = control
 
             next_obs_raw, _, done, _ = env.step(action1)
             next_obs = strip_z(next_obs_raw, env)
 
-            if ep < 200:
-                reward = phase1_reward(obs, action1, next_obs, done, env, ep=ep)
-            elif 200 <= ep < 400:
-                reward = phase2_reward(obs, action1, next_obs, done, env, ep=ep)
+            #phase blending (episodes: 0–500 → phase1 to phase2, 500–1000 → phase2 to phase3)
+            if ep < 500:
+                alpha = ep / 500
+                r1 = phase1_reward(obs, action1, next_obs, done, env, ep=ep)
+                r2 = phase2_reward(obs, action1, next_obs, done, env, ep=ep)
+                reward = (1 - alpha) * r1 + alpha * r2
+            elif ep < 1000:
+                alpha = (ep - 500) / 500
+                r2 = phase2_reward(obs, action1, next_obs, done, env, ep=ep)
+                r3 = phase3_reward(obs, action1, next_obs, done, env, ep=ep)
+                reward = (1 - alpha) * r2 + alpha * r3
             else:
                 reward = phase3_reward(obs, action1, next_obs, done, env, ep=ep)
 
