@@ -3,19 +3,21 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input, Dropout
 from tensorflow.python.keras.saving.saved_model.load import metrics
 from tensorflow.keras.layers import LeakyReLU
+from tensorflow.keras.layers import Flatten
 import numpy as np
 
 
 class RLAgent:
-    def __init__(self, input_shape, action_output=2, learning_rate=0.001):
-        self.input_shape = input_shape
+    def __init__(self, sequence_length, input_shape, action_output=2, learning_rate=0.001):
+        self.input_shape = (sequence_length, input_shape)
         self.action_output = action_output
         self.model = self._build_model()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate)
 
     def _build_model(self):
         return Sequential([
-            Input(shape=(self.input_shape,)),
+            Input(shape=self.input_shape),
+            Flatten(),
             Dense(64), LeakyReLU(alpha=0.01),
             Dense(128), LeakyReLU(alpha=0.01),
             Dense(256), LeakyReLU(alpha=0.01),
@@ -30,7 +32,7 @@ class RLAgent:
         return self.model(state, training=True)
 
     def predict(self, state):
-        state = np.array(state, dtype=np.float32).reshape(1, -1)  # Force batch dim
+        state = np.array(state, dtype=np.float32)  # Force batch dim
         output = self._predict_fast(state)
         return output.numpy()[0]
 
@@ -42,18 +44,9 @@ class RLAgent:
         with tf.GradientTape() as tape:
             predictions = self.model(obs_batch, training=True)
 
-            # MSE between predicted and taken action
+            # MSE between predicted and taken action, weighted by advantage
             loss_elements = tf.reduce_sum(tf.square(predictions - action_batch), axis=1)
-
-            # Weight MSE by advantage instead of raw returns
-            base_loss = tf.reduce_mean(loss_elements * advantages)
-
-            # Add small entropy bonus to encourage exploration
-            entropy = -tf.reduce_mean(tf.math.log(tf.abs(predictions) + 1e-6))
-            entropy_bonus = 0.001 * entropy
-
-            # Final loss
-            loss = base_loss - entropy_bonus
+            loss = tf.reduce_mean(loss_elements * advantages)
 
         # Compute and apply gradients
         grads = tape.gradient(loss, self.model.trainable_variables)

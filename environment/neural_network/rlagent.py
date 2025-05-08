@@ -45,10 +45,7 @@ class RLAgent:
         with tf.GradientTape() as tape:
             predictions = self.model(obs_batch, training=True)
             loss_elements = tf.reduce_sum(tf.square(predictions - action_batch), axis=1)
-            base_loss = tf.reduce_mean(loss_elements * returns)
-            entropy = -tf.reduce_mean(tf.math.log(tf.abs(predictions) + 1e-6))
-            entropy_bonus = 0.001 * entropy
-            loss = base_loss - entropy_bonus
+            loss = tf.reduce_mean(loss_elements * returns)
         grads = tape.gradient(loss, self.model.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
         return loss
