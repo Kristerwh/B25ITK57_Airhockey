@@ -1,9 +1,9 @@
 import numpy as np
 
 #sizes
-MALLET_SPEED = 1000
-MALLET_SIZE = 100
-PUCK_SIZE = 63.3
+MALLET_SPEED = 1000 #not used
+MALLET_SIZE = 100 #not used
+PUCK_SIZE = 31.65
 TABLE_WIDTH = 1948
 TABLE_HEIGHT = 1038
 
@@ -27,17 +27,17 @@ DEFENSIVE_ACTION_BOX_OFFSET = 0
 MOVE_HOME_TICKS = 5
 DEFENSIVE_ACTION_TICKS = 10
 PASSIVE_AGGRESSIVE_TICKS = 40
-PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS = 3000
+PASSIVE_AGGRESSIVE_DELAY_TICKS = 3000
 MAXIMUM_ALLOWED_GOONING = 3000
 
 
 
 #this class contains the necessary variables and functions for the AI script
 class AirHockeyAI:
-    def __init__(self,mallet_pos = MALLET_POS, mallet_speed = MALLET_SPEED, mallet_size = MALLET_SIZE, puck_size = PUCK_SIZE, table_width = TABLE_WIDTH, table_height = TABLE_HEIGHT, time_step = TIME_STEP, trajectory_time_frame = TRAJECTORY_TIME_FRAME):
-        self.mallet_pos = mallet_pos
-        self.mallet_speed = mallet_speed # is useless
-        self.mallet_size = mallet_size
+    def __init__(self, mallet_speed = MALLET_SPEED, mallet_size = MALLET_SIZE, puck_size = PUCK_SIZE, table_width = TABLE_WIDTH, table_height = TABLE_HEIGHT, time_step = TIME_STEP, trajectory_time_frame = TRAJECTORY_TIME_FRAME):
+        self.mallet_pos = None
+        self.mallet_speed = mallet_speed #not used
+        self.mallet_size = mallet_size #not used
         self.puck_pos = None
         self.puck_size = puck_size
         self.table_width = table_width
@@ -53,7 +53,6 @@ class AirHockeyAI:
         self.mallet_vx = 0
         self.mallet_vy = 0
         self.gooning_counter = 0
-        self.mallet_positions = []
 
     #different get functions
     def get_move_home_ticks(self):
@@ -134,7 +133,7 @@ class AirHockeyAI:
                 self.set_mallet_vy(mallet_vy)
                 self.set_move_home_ticks(ticks)
         else:
-            #this else-statement makes sure that the counter resets if the puck is no longer in the corner
+            #this else-statement makes sure that the counter resets if the mallet is no longer in the corner
             self.set_gooning_counter(0)
 
     def check_safe_to_move_home(self):
@@ -220,6 +219,7 @@ class AirHockeyAI:
             if DEFENSE_BOX_Y[0] < py < DEFENSE_BOX_Y[1] and px < DEFENSE_BOX_X:
                 intercept_point = (px,py)
                 time_to_intercept = trajectory_time[idx]
+                self.set_no_intercept_ticks(0)
                 return intercept_point,time_to_intercept
         return None,None
 
@@ -274,7 +274,7 @@ class AirHockeyAI:
         px, py  = self.puck_positions[1]
         if px <= TABLE_WIDTH/2:
             self.no_intercept_ticks += 1
-            if self.no_intercept_ticks >= PASSIVE_AGGRESSIVE_TIME_DELAY_TICKS:
+            if self.no_intercept_ticks >= PASSIVE_AGGRESSIVE_DELAY_TICKS:
                 ticks = PASSIVE_AGGRESSIVE_TICKS
                 self.set_passive_aggressive_action_ticks(ticks + 1)
                 mallet_pos_tuple = self.mallet_pos
@@ -320,7 +320,6 @@ def run(ai, puck_pos, mallet_pos):
 
     #these if statements checks if the AI is currently is executing a move
     if passive_aggressive_ticks > 0:
-        #print("passive_aggressive" , passive_aggressive_ticks)
         passive_aggressive_ticks -= 1
         ai.set_passive_aggressive_action_ticks(passive_aggressive_ticks)
         if passive_aggressive_ticks == 0:
@@ -328,7 +327,6 @@ def run(ai, puck_pos, mallet_pos):
         return mallet_vx, mallet_vy
 
     if move_home_ticks > 0:
-        #print("move_home", move_home_ticks)
         move_home_ticks -= 1
         ai.set_move_home_ticks(move_home_ticks)
         if move_home_ticks == 0:
@@ -337,7 +335,6 @@ def run(ai, puck_pos, mallet_pos):
 
     if defensive_action_ticks > 0:
         defensive_action_ticks -= 1
-        #print("defensive_action", defensive_action_ticks)
         ai.set_defensive_action_ticks(defensive_action_ticks)
         if defensive_action_ticks == 0:
             mallet_vx, mallet_vy, ticks = ai.move_mallet_home()
@@ -348,13 +345,11 @@ def run(ai, puck_pos, mallet_pos):
         return mallet_vx, mallet_vy
 
     if aggressive_action_ticks > 0:
-        #print("aggressive_action", aggressive_action_ticks)
         aggressive_action_ticks -= 1
         ai.set_aggressive_action_ticks(aggressive_action_ticks)
         if aggressive_action_ticks == 0:
             return 0, 0
         return mallet_vx, mallet_vy
-
 
     #function call to calculate velocity, trajectory and intercept point
     puck_vel = ai.calculate_velocity()
@@ -376,7 +371,7 @@ def run(ai, puck_pos, mallet_pos):
     else:
         ai.set_no_intercept_ticks(0)
 
-    #checks if the intercept time allows for an aggressiv move(less than 0.1 sec) inside the defense box, else it will do a defensive move
+    #checks if the intercept time allows for an aggressiv move(more than 0.1 sec) inside the defense box, else it will do a defensive move
     if time_to_intercept < 0.1:
         mallet_vx, mallet_vy, ticks = ai.defensive_action(trajectory)
         ai.set_defensive_action_ticks(ticks + 1)
@@ -384,9 +379,9 @@ def run(ai, puck_pos, mallet_pos):
         mallet_vx, mallet_vy, ticks = ai.aggressive_action(intercept_point, time_to_intercept)
         ai.set_aggressive_action_ticks(ticks + 1)
 
-    #updates the mallet velcity for the AI class for move execution
+    #updates the mallet velocity for the AI class for move execution
     ai.set_mallet_vx(mallet_vx)
     ai.set_mallet_vy(mallet_vy)
 
-    #return the current VX and VY values to the simulation environment
+    #returns the current VX and VY values to the simulation environment
     return mallet_vx, mallet_vy
