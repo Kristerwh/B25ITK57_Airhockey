@@ -55,7 +55,7 @@ scripted_ai2 = script.startup()
 input_shape = len(env.get_all_observation_keys()) + 2
 action_dim = 2
 
-agent = RLAgent(input_shape)
+agent = RLAgent(sequence_length=10, input_shape=8)
 obs_buffer = []
 action_buffer = []
 reward_buffer = []
@@ -76,6 +76,7 @@ def compute_returns(rewards, gamma=0.99):
 def normalize(value, min_val, max_val):
     return 2 * (value - min_val) / (max_val - min_val) - 1
 
+from collections import deque
 def strip_z(obs):
     puck_pos = env.obs_helper.get_from_obs(obs, "puck_pos")[:2]
     puck_vel = np.concatenate([
@@ -91,11 +92,19 @@ def strip_z(obs):
     normalized_obs = 2 * (raw_obs - env.obs_low) / (env.obs_high - env.obs_low) - 1
     return normalized_obs
 
+from collections import deque
+
+
 try:
     with (mujoco.viewer.launch_passive(model, data) as viewer):
         # agent.load("saved/model_rl.keras")
+        sequence_length = 10
+        obs_sequence = deque(maxlen=sequence_length)
         mujoco.mj_step(model, data)
-        obs = strip_z(env.reset())
+        obs_raw = strip_z(env.reset())
+        for _ in range(sequence_length):
+            obs_sequence.append(obs_raw)
+        obs = np.array(obs_sequence)
         step = 0
         episode = 0
         while viewer.is_running():
@@ -106,7 +115,9 @@ try:
             mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (float(data.xpos[paddle_id2][1] * 1000) + 519)
 
             noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.005 else 0
-            action1 = agent.predict(obs) + noise
+            #action1 = agent.predict(obs) + noise
+            action1 = agent.predict(obs.reshape(1, sequence_length, 8)) + noise
+            action1 = np.asarray(action1).reshape(-1)
             action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
             action2 = np.array([-action2[0], -action2[1]])
             action = np.concatenate((action1, action2))
@@ -117,7 +128,7 @@ try:
 
             next_obs, reward, absorbing, _ = env.step(action1)
             mujoco.mj_step(model, data)
-            obs_buffer.append(obs)
+            obs_buffer.append(obs.copy())  # obs.shape = (5,8)
             action_buffer.append(action1)
             reward_buffer.append(reward)
 
@@ -140,6 +151,10 @@ try:
                     writer.add_scalar("Reward", np.sum(reward_buffer), episode)
                     writer.add_scalar("Loss", loss, episode)
 
+                    obs_raw = strip_z(next_obs)
+                    obs_sequence.append(obs_raw)
+                    obs = np.array(obs_sequence)
+
                     obs_buffer.clear()
                     action_buffer.clear()
                     reward_buffer.clear()
@@ -150,13 +165,21 @@ try:
                     episode = 0
 
                 if absorbing or step >= 500:
-                    obs = strip_z(env.reset())
+                    obs_sequence.clear()
+                    obs_raw = strip_z(env.reset())
+                    for _ in range(sequence_length):
+                        obs_sequence.append(obs_raw)  # samme bilde 5 ganger
+                    obs = np.array(obs_sequence)
                     step = 0
                     episode += 1
                     print(f"Episode {episode} done.")
-                obs = strip_z(next_obs)
+                obs_raw = strip_z(next_obs)
+                obs_sequence.append(obs_raw)
+                obs = np.array(obs_sequence)
             else:
-                obs = strip_z(next_obs)
+                obs_raw = strip_z(next_obs)
+                obs_sequence.append(obs_raw)
+                obs = np.array(obs_sequence)
 
 finally:
     writer.close()
