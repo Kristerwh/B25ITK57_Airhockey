@@ -22,7 +22,7 @@ def shaping_rewards(obs, mallet_pos, mallet_vel, puck_pos, puck_vel, fade=1.0):
     if mallet_pos[0] > 0.3:
         reward -= 5.0
 
-    #to prevent sitting on puck
+    #Prevent sitting on puck
     distance = np.linalg.norm(puck_pos - mallet_pos)
     if distance < 0.01:
         reward -= 5.0
@@ -36,36 +36,29 @@ def phase1_reward(obs, action, next_obs, absorbing, env, ep=None):
     mallet_vel = obs[6:8]
 
     reward = 0
-
-    #Chase the puck ONLY if it's on our side
     distance = np.linalg.norm(puck_pos - mallet_pos)
+
     if puck_pos[0] < 0:
         reward += max(0, 1.0 - distance) * 0.5
-
-        #Encourage velocity toward puck
         direction_to_puck = puck_pos - mallet_pos
         if np.linalg.norm(direction_to_puck) > 0:
             direction_to_puck /= (np.linalg.norm(direction_to_puck) + 1e-8)
             alignment = np.dot(mallet_vel, direction_to_puck)
             reward += 0.3 * alignment
     else:
-        reward -= 0.1 * (mallet_pos[0] > 0)  # discourage chasing when puck is across
+        reward -= 0.1 * (mallet_pos[0] > 0)
 
-    #scaled penalty for overstepping to other side
     if mallet_pos[0] > 0:
         reward -= 4.0 + 8.0 * mallet_pos[0]
     elif mallet_pos[0] > -0.1:
         reward -= 0.2
 
-    #Bonus proximity reward
     if distance < 0.1:
         reward += 0.9
 
-    #Encourage movement, discourage stalling or sitting far
     reward -= 0.05 * distance
     reward += 0.01 * np.linalg.norm(mallet_vel)
 
-    #Small bonus for being behind the puck, facing goal
     if puck_pos[0] < mallet_pos[0] and mallet_pos[0] < 0:
         reward += 0.2
 
@@ -73,18 +66,30 @@ def phase1_reward(obs, action, next_obs, absorbing, env, ep=None):
 
 def phase2_reward(obs, action, next_obs, absorbing, env, ep=None):
     reward = phase1_reward(obs, action, next_obs, absorbing, env, ep)
+
+    puck_pos = obs[0:2]
+    mallet_pos = obs[4:6]
     puck_push = next_obs[0] - obs[0]
-    reward += 4.0 * puck_push
-    reward += 0.2 * np.linalg.norm(obs[2:4])
+    puck_vel = next_obs[2:4]
+    distance = np.linalg.norm(puck_pos - mallet_pos)
+
+    if puck_push > 0:
+        reward += 4.0 * puck_push
+    else:
+        penalty = 6.0 * abs(puck_push) + 10.0 * abs(puck_push) ** 2
+        reward -= penalty
+
+    reward += 0.2 * np.linalg.norm(puck_vel)
+
+    vel_dir = puck_vel / (np.linalg.norm(puck_vel) + 1e-8)
+    alignment = np.dot(vel_dir, np.array([1.0, 0.0]))
+    reward += 0.5 * alignment
+
+    #Mild urgency — penalize passivity when puck is moving toward agent
+    if obs[0] > -0.4 and next_obs[0] < -0.6 and puck_vel[0] < 0 and np.linalg.norm(mallet_pos - puck_pos) > 0.3:
+        reward -= 0.5  # didn't act to intercept
+
     return np.clip(reward, -20, 20)
-
-    #Penalize backward push toward own goal
-    puck_push = next_obs[0] - obs[0]
-    mallet_behind_puck = mallet_pos[0] > puck_pos[0]
-    agent_pushed = np.linalg.norm(puck_pos - mallet_pos) < 0.15 and puck_push < 0
-
-    if mallet_behind_puck and agent_pushed:
-        reward -= abs(puck_push) * 20.0
 
 def phase3_reward(obs, action, next_obs, absorbing, env, ep=None):
     reward = phase2_reward(obs, action, next_obs, absorbing, env, ep)
@@ -94,7 +99,6 @@ def phase3_reward(obs, action, next_obs, absorbing, env, ep=None):
     mallet_pos = next_obs[4:6]
     mallet_vel = next_obs[6:8]
 
-    #Strategic puck chasing — only on own side
     if next_obs[0] < 0:
         distance = np.linalg.norm(puck_pos - mallet_pos)
         if distance < 0.6:
@@ -109,45 +113,48 @@ def phase3_reward(obs, action, next_obs, absorbing, env, ep=None):
     if next_obs[0] < -0.6 and np.linalg.norm(puck_vel) < 0.01:
         reward -= 1.0
 
-
     direction = puck_pos - mallet_pos
     if np.linalg.norm(direction) > 0:
         direction /= (np.linalg.norm(direction) + 1e-8)
         alignment = np.dot(mallet_vel, direction)
         reward += 0.1 * alignment
 
-    # #Scoring logic
-    # if next_obs[0] > 0 and absorbing:
-    #     reward += 100
-    # elif next_obs[0] <= 0 and absorbing:
-    #     reward -= 150
-
-    # Scoring logic2
     if next_obs[0] > 0 and absorbing:
         reward += 40
     elif next_obs[0] <= 0 and absorbing:
         reward -= 60
 
-    #Mild penalty for puck lingering too close
     if next_obs[0] < -0.5:
         reward -= 0.2
 
-    #Reward for pushing puck forward
     delta_x = next_obs[0] - obs[0]
     if delta_x > 0:
         reward += delta_x * 2.0
+    else:
+        reward -= abs(delta_x) * 0.5
 
-    #Encourage blocking near own goal
     if next_obs[0] < -0.7 and np.linalg.norm(puck_pos - mallet_pos) < 0.15:
         reward += 1.5
 
-    #Penalize if agent and puck idle
     if np.linalg.norm(puck_vel) < 0.01 and np.linalg.norm(mallet_vel) < 0.01:
         reward -= 2.0
 
-    #Light reward for puck speed
     reward += 0.2 * np.linalg.norm(puck_vel)
 
-    #time penalty
-    reward -= 0.01
+    reward -= 0.02
+
+    if abs(next_obs[1]) > 0.9:
+        reward -= 1.0
+
+    if np.sign(obs[2]) != np.sign(next_obs[2]) and abs(obs[2]) > 0.1 and abs(next_obs[2]) > 0.1:
+        reward -= 2.0
+
+    #Penalize passivity while puck is moving toward own goal
+    if puck_vel[0] < -0.1 and next_obs[0] < -0.6 and np.linalg.norm(mallet_vel) < 0.05:
+        reward -= 1.0
+
+    #Reward successful clearance
+    if obs[0] < -0.6 and next_obs[0] > -0.3 and puck_vel[0] > 0:
+        reward += 1.5
+
     return np.clip(reward, -100, 100)

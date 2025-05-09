@@ -44,9 +44,10 @@ class MainMenu(QMainWindow):
         button_definitions = {
             "Manual AI vs AI": self.run_manual_vs_ai,
             "Touchscreen test vs AI": self.touchscreen_vs_ai,
+            "PPO Agent Vs Human(no fine tuning)": self.PPOagent_vs_human_eva,
+            "PPO Agent Vs Human(with fine tuning)": self.PPOagent_vs_human,
+            "Human Vs Human Normal Match": self.human_vs_human,
             "Show Stats": self.show_stats,
-            "Ikke enda klar 2": self.placeholder,
-            "Ikke enda klar 3": self.placeholder
         }
 
         for label, callback in button_definitions.items():
@@ -78,15 +79,27 @@ class MainMenu(QMainWindow):
         script_path = os.path.abspath("test_scripts/main_copy_for_ui_testing_touchscreen.py")
         subprocess.Popen([sys.executable, script_path])
 
+    def PPOagent_vs_human_eva(self):
+        script_path = os.path.abspath("main_touchscreen_finetune_eva.py")
+        subprocess.Popen([sys.executable, script_path])
+
+    def PPOagent_vs_human(self):
+        script_path = os.path.abspath("main_touchscreen_finetune.py")
+        subprocess.Popen([sys.executable, script_path])
+
+    def human_vs_human(self):
+        script_path = os.path.abspath("human_vs_human_normal_match.py")
+        subprocess.Popen([sys.executable, script_path])
+
     def show_stats(self):
         self.stats_window = StatsWindow()
         self.stats_window.exec_()
-
-    def placeholder(self):
-        print("placeholder for now")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     menu = MainMenu()
     menu.show()
     sys.exit(app.exec_())
+
+# "../environment/PPO_training/PPO_training_saved_models/saved_model"
+# "../environment/PPO_training/PPO_training_vs_human_saved_models/fine_tuned_model"

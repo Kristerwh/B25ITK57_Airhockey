@@ -47,3 +47,8 @@ class MalletControl:
         self.prev_vel = np.zeros(len(self.left_mallet_joint_ids) + len(self.right_mallet_joint_ids))
         if self.debug:
             self.controller_record.clear()
+
+#for ppo agent
+def apply_action_ppo(action, max_speed=100.0):
+    """ PPO-safe motor velocity clamp """
+    return np.clip(action, -max_speed, max_speed)
