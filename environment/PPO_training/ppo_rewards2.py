@@ -158,3 +158,5 @@ def phase3_reward(obs, action, next_obs, absorbing, env, ep=None):
         reward += 1.5
 
     return np.clip(reward, -100, 100)
+
+#bonus points for puck being on the opponents side, minus points for being close to own goal

@@ -7,6 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 from datetime import datetime
+from environment.PPO_training.ppo_rewards2 import phase1_reward, phase2_reward, phase3_reward
 
 import mujoco.viewer
 import os

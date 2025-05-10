@@ -106,7 +106,7 @@ def main(render=True):
             mallet2_pos = 2 * 974 - (float(data.xpos[paddle_id2][0]) * 1000 + 974), \
                           2 * 519 - (float(data.xpos[paddle_id2][1]) * 1000 + 519)
 
-            script_noise = 0.05 if ep >= 1500 else 0.0
+            script_noise = 0.05 if ep >= 800 else 0.0
             if use_scripted:
                 action2 = script.run(scripted_ai, puck_pos_reverted, mallet2_pos)
                 action2 = np.array(action2[:2], dtype=np.float32)
@@ -182,14 +182,14 @@ def main(render=True):
                 if (episode + 1) % 50 == 0:
                     avg_reward = np.mean(reward_log[-50:])
                     print(f"Episode {episode + 1}: avg reward (last 50 eps) = {avg_reward:.2f}")
-                    trainer.save("PPO_training_saved_models/saved_model")
+                    trainer.save("PPO_training_saved_models_v2/saved_model")
     else:
         for episode in trange(total_episodes):
             run_episode(episode)
             if (episode + 1) % 50 == 0:
                 avg_reward = np.mean(reward_log[-50:])
                 print(f"Episode {episode + 1}: avg reward (last 50 eps) = {avg_reward:.2f}")
-                trainer.save("PPO_training_saved_models/saved_model")
+                trainer.save("PPO_training_saved_models_v2/saved_model")
 
     plt.figure()
     plt.plot(reward_log, label='Reward')

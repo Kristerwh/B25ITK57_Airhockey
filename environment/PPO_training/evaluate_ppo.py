@@ -43,7 +43,7 @@ def main(render=True, episodes=50):
     data = env._data
 
     trainer = PPOTrainer(obs_dim=8, action_dim=2)
-    trainer.load("PPO_training_saved_models/saved_model")
+    trainer.load("PPO_training_saved_models_v2/saved_model")
     scripted_ai = script.startup()
 
     paddle_id2 = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "paddle_right")
