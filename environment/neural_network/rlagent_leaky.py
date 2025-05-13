@@ -8,7 +8,7 @@ import numpy as np
 
 
 class RLAgent:
-    def __init__(self, sequence_length, input_shape, action_output=2, learning_rate=0.95):
+    def __init__(self, sequence_length, input_shape, action_output=2, learning_rate=0.001):
         self.input_shape = (sequence_length, input_shape)
         self.action_output = action_output
         self.model = self._build_model()
@@ -18,11 +18,11 @@ class RLAgent:
         return Sequential([
             Input(shape=self.input_shape),
             Flatten(),
-            Dense(64), LeakyReLU(alpha=1),
-            # Dense(128), LeakyReLU(alpha=1),
-            # Dense(256), LeakyReLU(alpha=1),
-            # Dense(128), LeakyReLU(alpha=1),
-            Dense(64), LeakyReLU(alpha=1),
+            Dense(64), LeakyReLU(alpha=0.01),
+            Dense(128), LeakyReLU(alpha=0.01),
+            Dense(256), LeakyReLU(alpha=0.01),
+            Dense(128), LeakyReLU(alpha=0.01),
+            Dense(64), LeakyReLU(alpha=0.01),
             Dense(self.action_output, activation="linear", name="output_layer")
         ])
 
