@@ -49,7 +49,7 @@ class AirHockeyBase(MuJoCo):
                 ("paddle_left", ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
 
         else:  # Two-player mode
-            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "two player.xml")  # Load updated XML
+            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")  # Load updated XML
             action_spec += ["left_mallet_x_motor", "left_mallet_y_motor",
                             "right_mallet_x_motor", "right_mallet_y_motor"]
             additional_data += [("paddle_right_x_pos", "paddle_right_x", ObservationType.JOINT_POS),
@@ -91,16 +91,16 @@ class AirHockeyBase(MuJoCo):
             # Penalize distance to puck
             dist = np.linalg.norm(puck_pos - mallet_pos)
             reward -= min(dist, 1.0) * 0.05
-
-            # Bonus for hitting the puck
-            if self.is_colliding(next_obs, 'puck', 'paddle_left'):
-                #print("collision detected")
-                reward += 20
-
-            # Opponent goal
-            if absorbing:
-                print("Opponent Scores!")
-                reward -= 30
+            #
+            # # Bonus for hitting the puck
+            # if self.is_colliding(next_obs, 'puck', 'paddle_left'):
+            #     #print("collision detected")
+            #     reward += 20
+            #
+            # # Opponent goal
+            # if absorbing:
+            #     print("Opponent Scores!")
+            #     reward -= 30
 
             # Bonus if moving toward the puck
             dx, dy = puck_pos - mallet_pos
@@ -108,19 +108,19 @@ class AirHockeyBase(MuJoCo):
             if (dx * mvx >= 0.00001) and (dy * mvy >= 0.00001):
                 reward += 0.1
 
-        if self.mallet_rim_collision(next_obs):
-            reward -= 0.05
+        # if self.mallet_rim_collision(next_obs):
+        #     reward -= 0.05
+        #
+        # # Mallet on opponents side
+        # if mallet_pos[0] > 0:
+        #     reward -= 0.1
 
-        # Mallet on opponents side
-        if mallet_pos[0] > 0:
-            reward -= 0.1
-
-        # Puck on opponents side
-        if puck_pos[0] > 0:
-            reward += 0.1
-            if absorbing:
-                reward += 50
-                print("AI Scores!")
+        # # Puck on opponents side
+        # if puck_pos[0] > 0:
+        #     reward += 0.1
+        #     if absorbing:
+        #         reward += 50
+        #         print("AI Scores!")
         return reward
 
     # TODO
@@ -224,16 +224,25 @@ class AirHockeyBase(MuJoCo):
             if min_dist <= distance <= max_dist:
                 break  # valid sample
 
+            # Set the puck position directly in MuJoCo
+            self._data.qpos[self._model.jnt("puck_x").qposadr] = x
+            self._data.qpos[self._model.jnt("puck_y").qposadr] = y
+            self._data.qpos[self._model.jnt("paddle_left_x").qposadr] = mx
+            self._data.qpos[self._model.jnt("paddle_left_y").qposadr] = my
 
-        # Set the puck position directly in MuJoCo
-        self._data.qpos[self._model.jnt("puck_x").qposadr] = x
+    def _randomize_puck_position_y(self):
+        while True:
+            y = np.random.uniform(*(-0.4, 0.4))
+            if y != 0:
+                break
         self._data.qpos[self._model.jnt("puck_y").qposadr] = y
-        self._data.qpos[self._model.jnt("paddle_left_x").qposadr] = mx
-        self._data.qpos[self._model.jnt("paddle_left_y").qposadr] = my
 
-    def reset(self, obs=None):
+    def reset(self, randomize="xy", obs=None):
         super().reset(obs)  # This will set up model/data/obs_helper and reset MuJoCo
-        self._randomize_puck_position()
+        if randomize == "xy":
+            self._randomize_puck_position()
+        if randomize == "y":
+            self._randomize_puck_position_y()
         mujoco.mj_forward(self._model, self._data)
 
         # Recreate observation from updated state

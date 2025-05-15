@@ -15,7 +15,7 @@ from environment.env_settings.environments.position_controller_mallet_wrapper im
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from rule_based_ai_agent_v31 import AI_script_v31 as script
 from environment.neural_network.rlagent_leaky import RLAgent
-from buffer import ReplayBuffer
+# from buffer import ReplayBuffer
 
 env = AirHockeyBase()
 
@@ -114,16 +114,17 @@ try:
             mallet_pos_script_ai = float(data.xpos[paddle_id][0] * 1000) + 974, float(data.xpos[paddle_id][1] * 1000) + 519
             mallet2_pos_script_ai = 2 * 974 - (float(data.xpos[paddle_id2][0] * 1000) + 974), 2 * 519 - (float(data.xpos[paddle_id2][1] * 1000) + 519)
 
-            noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.005 else 0
+            noise = np.random.normal(0, 1, size=2) if np.random.rand() < 0.2 else 0
             #action1 = agent.predict(obs) + noise
             action1 = agent.predict(obs.reshape(1, sequence_length, 8)) + noise
             action1 = np.asarray(action1).reshape(-1)
+            action1 = np.clip(action1, -0.1, 0.1)
             action2 = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
             action2 = np.array([-action2[0], -action2[1]])
             action = np.concatenate((action1, action2))
 
             control_action = controller.apply_action(action)
-            data.ctrl[:2] = control_action[:2]
+            # data.ctrl[:2] = control_action[:2]
             data.ctrl[2:4] = control_action[2:4]
 
             next_obs, reward, absorbing, _ = env.step(action1)
