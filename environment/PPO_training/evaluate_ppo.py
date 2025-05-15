@@ -43,6 +43,7 @@ def main(render=True, episodes=50):
     data = env._data
 
     trainer = PPOTrainer(obs_dim=8, action_dim=2)
+    #trainer.load("PPO_training_saved_models/phase3/saved_model")
     trainer.load("PPO_training_saved_models/saved_model")
     scripted_ai = script.startup()
 

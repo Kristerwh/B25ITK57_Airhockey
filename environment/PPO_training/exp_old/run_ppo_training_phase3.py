@@ -6,8 +6,22 @@ from datetime import datetime
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.PPO_training.ppo_trainer import PPOTrainer
-from environment.PPO_training.ppo_rewards import phase1_reward, phase2_reward, phase3_reward
-#phase4_reward, phase5_reward
+from environment.PPO_training.rewards.exp_old_rewards.ppo_rewards_phase3 import phased_reward as reward_fn
+from environment.PPO_training.rewards.exp_old_rewards.reward_utils import (
+    proximity_to_puck,
+    move_toward_puck,
+    hit_puck,
+    push_right,
+    push_wrong,
+    puck_speed,
+    puck_direction,
+    passive_penalty,
+    behind_puck,
+    overposition,
+    goal_scored,
+    goal_conceded
+)
+
 
 from rule_based_ai_agent_v31 import AI_script_v31 as script
 from environment.env_settings.environments.iiwas.env_base import is_colliding_ppo
@@ -64,9 +78,9 @@ def main(render=True):
     data = env._data
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-    plot_dir = f"ppo_training_plots/{run_id}"
+    plot_dir = f"ppo_training_plots/phase3_{run_id}"
     os.makedirs(plot_dir, exist_ok=True)
-    writer = SummaryWriter(f"runs/ppo_airhockey_{run_id}")
+    writer = SummaryWriter(f"runs/ppo_airhockey_phase3_{run_id}")
 
     scripted_ai = script.startup()
     paddle_id2 = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "paddle_right")
@@ -124,19 +138,24 @@ def main(render=True):
             next_obs_raw, _, done, _ = env.step(action1)
             next_obs = strip_z(next_obs_raw, env)
 
-            #phase blending (episodes: 0–500 → phase1 to phase2, 500–1000 → phase2 to phase3)
-            if ep < 400:
-                alpha = ep / 400
-                r1 = phase1_reward(obs, action1, next_obs, done, env, ep=ep)
-                r2 = phase2_reward(obs, action1, next_obs, done, env, ep=ep)
-                reward = (1 - alpha) * r1 + alpha * r2
-            elif ep < 1000:
-                alpha = (ep - 400) / 600
-                r2 = phase2_reward(obs, action1, next_obs, done, env, ep=ep)
-                r3 = phase3_reward(obs, action1, next_obs, done, env, ep=ep)
-                reward = (1 - alpha) * r2 + alpha * r3
-            else:
-                reward = phase3_reward(obs, action1, next_obs, done, env, ep=ep)
+            reward = reward_fn(obs, action1, next_obs, done, env, ep)
+            comp_vals = {
+                "proximity": proximity_to_puck(obs, action1, next_obs, done, env, ep),
+                "move_toward": move_toward_puck(obs, action1, next_obs, done, env, ep),
+                "hit": hit_puck(obs, action1, next_obs, done, env, ep),
+                "push_right": push_right(obs, action1, next_obs, done, env, ep),
+                "push_wrong": push_wrong(obs, action1, next_obs, done, env, ep),
+                "puck_speed": puck_speed(obs, action1, next_obs, done, env, ep),
+                "puck_direction": puck_direction(obs, action1, next_obs, done, env, ep),
+                "passive_penalty": passive_penalty(obs, action1, next_obs, done, env, ep),
+                "behind_puck": behind_puck(obs, action1, next_obs, done, env, ep),
+                "overposition": overposition(obs, action1, next_obs, done, env, ep),
+                "goal_scored": goal_scored(obs, action1, next_obs, done, env, ep),
+                "goal_conceded": goal_conceded(obs, action1, next_obs, done, env, ep),
+            }
+            for name, val in comp_vals.items():
+                writer.add_scalar(f"RewardComponents/{{name}}", val, ep)
+
 
             episode_reward += reward
 
@@ -182,14 +201,14 @@ def main(render=True):
                 if (episode + 1) % 50 == 0:
                     avg_reward = np.mean(reward_log[-50:])
                     print(f"Episode {episode + 1}: avg reward (last 50 eps) = {avg_reward:.2f}")
-                    trainer.save("PPO_training_saved_models/saved_model")
+                    trainer.save("PPO_training_saved_models/phase3/saved_model")
     else:
         for episode in trange(total_episodes):
             run_episode(episode)
             if (episode + 1) % 50 == 0:
                 avg_reward = np.mean(reward_log[-50:])
                 print(f"Episode {episode + 1}: avg reward (last 50 eps) = {avg_reward:.2f}")
-                trainer.save("PPO_training_saved_models/saved_model")
+                trainer.save("PPO_training_saved_models/phase3/saved_model")
 
     plt.figure()
     plt.plot(reward_log, label='Reward')
@@ -198,7 +217,7 @@ def main(render=True):
     plt.title('PPO Reward Curve')
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"{plot_dir}/ppo_training_reward_curve.png")
+    plt.savefig(f"ppo_training_plots/phase3_{run_id}/ppo_training_reward_curve.png")
     plt.close()
 
     plt.figure()
@@ -209,7 +228,7 @@ def main(render=True):
     plt.title('PPO Losses & Entropy')
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"{plot_dir}/ppo_training_diagnostics.png")
+    plt.savefig(f"ppo_training_plots/phase3_{run_id}/ppo_training_diagnostics.png")
     plt.close()
 
     writer.close()
