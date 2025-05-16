@@ -1,6 +1,7 @@
 import sys
 import os
 
+from environment.PPO_training.ppo_agent import PPOAgent
 from environment.PPO_training.ppo_trainer import PPOTrainer
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -73,7 +74,7 @@ def normalize(value, min_val, max_val):
     return 2 * (value - min_val) / (max_val - min_val) - 1
 
 from collections import deque
-def strip_z(obs):
+def strip_z(obs, normalized=True):
     puck_pos = env.obs_helper.get_from_obs(obs, "puck_pos")[:2]
     puck_vel = np.concatenate([
         env.obs_helper.get_from_obs(obs, "puck_x_vel"),
@@ -86,7 +87,10 @@ def strip_z(obs):
     ])
     raw_obs = np.concatenate([puck_pos, puck_vel, mallet_pos, mallet_vel])
     normalized_obs = 2 * (raw_obs - env.obs_low) / (env.obs_high - env.obs_low) - 1
-    return normalized_obs
+    if normalized:
+        return normalized_obs
+    else:
+        return raw_obs
 
 from collections import deque
 sequence_length = 10
@@ -98,7 +102,7 @@ ppoagent = PPOTrainer(obs_dim=8, action_dim=2)
 ppoagent.load("PPO_training/PPO_training_saved_models/saved_model")
 scripted_ai = script.startup()
 scripted_ai2 = script.startup()
-chosen_agent = ppoagent
+chosen_agent = scripted_ai
 
 # Set up TensorBoard writer
 run_id = time.strftime("%Y%m%d-%H%M%S")
@@ -115,14 +119,20 @@ goal_type_log = []
 try:
     with mujoco.viewer.launch_passive(model, data) as viewer:
 
-        obs_sequence = deque(maxlen=sequence_length)
-        obs_raw = strip_z(env.reset("y"))
-        for _ in range(sequence_length):
-            obs_sequence.append(obs_raw)
-        obs = np.array(obs_sequence)
-
         step = 0
         episode = 1
+        goals = 0
+
+        obs_sequence = deque(maxlen=sequence_length)
+        if episode % 2 == 0:
+            obs_raw = strip_z(env.reset("opponent_y"), normalized=False)
+            obs_normalized = strip_z(env.reset("opponent_y"))
+        else:
+            obs_raw = strip_z(env.reset("y"), normalized=False)
+            obs_normalized = strip_z(env.reset("y"))
+        for _ in range(sequence_length):
+            obs_sequence.append(obs_normalized)
+        obs = np.array(obs_sequence)
 
         # Set initial timers
         episode_start_time = time.time()
@@ -134,7 +144,7 @@ try:
             goals_in_episode = 0
             opponent_goals_in_episode = 0
             first_goal_time = None
-            if episode >= 11:
+            if goals >= 10:
                 print("10 episodes completed. Exiting...")
                 break
             base_pos = np.array([data.qpos[5], data.qpos[6]])
@@ -146,8 +156,9 @@ try:
             if chosen_agent == scripted_ai:
                 action = script.run(scripted_ai, puck_pos, mallet_pos_script_ai)
                 action = np.asarray(action).reshape(-1)[:2]
-                data.ctrl[:2] = action[:2]
-                mujoco.mj_step(model, data)
+                # data.ctrl[:2] = action[:2]
+                # mujoco.mj_step(model, data)
+                env.step(action)
             elif chosen_agent == agent:
                 action = agent.predict(obs.reshape(1, sequence_length, 8))
                 action = np.asarray(action).reshape(-1)
@@ -160,7 +171,7 @@ try:
             opponent_action = script.run(scripted_ai2, puck_pos_reverted, mallet2_pos_script_ai)
             opponent_action = -opponent_action[0], -opponent_action[1]
             opponent_action = np.asarray(opponent_action).reshape(-1)[:2]
-            opponent_action = np.clip(opponent_action, -0.15, 0.15)
+            # opponent_action = np.clip(opponent_action, -0.15, 0.15)
             data.ctrl[2:4] = opponent_action[:2]
 
             if step % 1 == 0:
@@ -170,8 +181,8 @@ try:
             step += 1
 
             current_time = time.time()
-            if puck_pos[0] < 0 or puck_pos[0] > 1948:
-                if puck_pos[0] > 974:  # Agent scores
+            if puck_pos[0] < 0 or puck_pos[0] > 1948 or step >= 10000:
+                if puck_pos[0] > 1948:  # Agent scores
                     print("Agent scores")
                     goals_in_episode += 1
                     if first_goal_time is None:
@@ -179,9 +190,10 @@ try:
                     # Log time and type
                     goal_times_log.append(current_time - episode_start_time)
                     goal_type_log.append("agent")
+                    goals += 1
 
 
-                elif puck_pos[0] < 974:  # Opponent scores
+                elif puck_pos[0] < 0:  # Opponent scores
 
                     print("Opponent scores")
 
@@ -195,6 +207,10 @@ try:
                     goal_times_log.append(current_time - episode_start_time)
 
                     goal_type_log.append("opponent")
+                    goals += 1
+
+                elif step >= 10000:
+                    print("reset")
 
                 goal_log.append(goals_in_episode)
                 opponent_goal_log.append(opponent_goals_in_episode)  # <<< ADDED
@@ -214,9 +230,14 @@ try:
                 episode += 1
 
                 obs_sequence = deque(maxlen=sequence_length)
-                obs_raw = strip_z(env.reset("y"))
+                if episode % 2 == 0:
+                    obs_raw = strip_z(env.reset("opponent_y"), normalized=False)
+                    obs_normalized = strip_z(env.reset("opponent_y"))
+                else:
+                    obs_raw = strip_z(env.reset("y"), normalized=False)
+                    obs_normalized = strip_z(env.reset("y"))
                 for _ in range(sequence_length):
-                    obs_sequence.append(obs_raw)
+                    obs_sequence.append(obs_normalized)
                 obs = np.array(obs_sequence)
 
                 step = 0
@@ -227,8 +248,9 @@ try:
 
             else:
                 if chosen_agent != scripted_ai:
-                    obs_raw = strip_z(next_obs)
-                    obs_sequence.append(obs_raw)
+                    obs_raw = strip_z(next_obs, normalized=False)
+                    obs_normalized = strip_z(next_obs)
+                    obs_sequence.append(obs_normalized)
                     obs = np.array(obs_sequence)
 
 finally:

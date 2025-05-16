@@ -14,7 +14,7 @@ from mushroom_rl.utils.spaces import Box
 
 """
 class AirHockeyBase(MuJoCo):
-    def __init__(self, gamma=0.99, horizon=500, timestep=1 / 1000., n_intermediate_steps=20, n_substeps=1,
+    def __init__(self, gamma=0.99, horizon=500, timestep=1 / 1000., n_intermediate_steps=1, n_substeps=1,
                  n_agents=1, viewer_params={}):
 
         """
@@ -130,13 +130,13 @@ class AirHockeyBase(MuJoCo):
             -1.0, -0.5,  # puck_pos
             -5.0, -5.0,  # puck_vel
             -1.0, -0.5,  # mallet_pos
-            -5.0, -5.0  # mallet_vel
+            -500.0, -500.0  # mallet_vel
         ])
         self.obs_high = np.array([
             1.0, 0.5,  # puck_pos
             5.0, 5.0,  # puck_vel
             1.0, 0.5,  # mallet_pos
-            5.0, 5.0  # mallet_vel
+            500.0, 500.0  # mallet_vel
         ])
         mdp_info.observation_space = Box(self.obs_low, self.obs_high)
         return mdp_info
@@ -237,12 +237,23 @@ class AirHockeyBase(MuJoCo):
                 break
         self._data.qpos[self._model.jnt("puck_y").qposadr] = y
 
+    def _randomize_puck_position_y_opponent(self):
+        while True:
+            y = np.random.uniform(*(-0.4, 0.4))
+            x = 1
+            if y != 0:
+                break
+        self._data.qpos[self._model.jnt("puck_y").qposadr] = y
+        self._data.qpos[self._model.jnt("puck_x").qposadr] = x
+
     def reset(self, randomize="xy", obs=None):
         super().reset(obs)  # This will set up model/data/obs_helper and reset MuJoCo
         if randomize == "xy":
             self._randomize_puck_position()
         if randomize == "y":
             self._randomize_puck_position_y()
+        if randomize == "opponent_y":
+            self._randomize_puck_position_y_opponent()
         mujoco.mj_forward(self._model, self._data)
 
         # Recreate observation from updated state
