@@ -6,11 +6,11 @@ import pyautogui
 import mujoco
 import mujoco.viewer
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from rule_based_ai_agent_v31 import AI_script_v31 as script
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 env = AirHockeyBase()
 model = env._model
@@ -39,15 +39,35 @@ reset_game()
 
 scene = mujoco.MjvScene(model, maxgeom=1000)
 camera = mujoco.MjvCamera()
+# camera.type = mujoco.mjtCamera.mjCAMERA_FREE
+# camera.lookat = np.array([0.0, 0.0, 0.0])     #sentrer kamera i midten
+# camera.azimuth = 90                           #horizontal = 0, vertical = 90
+# camera.elevation = -90                        #ser rett ned
+# camera.distance = 1.3                         #zoom in og zoom out, 1.2/1.3 funker
+# camera.trackbodyid = -1                       #jager ikke bodys(xml objekter altså)
+# camera.fixedcamid = -1
 option = mujoco.MjvOption()
-mujoco.mjv_defaultCamera(camera)
 mujoco.mjv_defaultOption(option)
+option.frame = mujoco.mjtFrame.mjFRAME_NONE
+#mujoco.mjv_defaultCamera(camera)
 
 with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
     time.sleep(1)
     pyautogui.getWindowsWithTitle("MuJoCo")[0].maximize()
-
     while viewer.is_running():
+
+        viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+        viewer.cam.lookat[:] = [0.0, 0.0, 0.0]
+        viewer.cam.azimuth = 90
+        viewer.cam.elevation = -90
+        viewer.cam.distance = 1.39
+        viewer.cam.trackbodyid = -1
+        viewer.cam.fixedcamid = -1
+
+        if abs(viewer.cam.azimuth - 90) > 1 or abs(viewer.cam.elevation + 90) > 1:
+            viewer.cam.azimuth = 90
+            viewer.cam.elevation = -90
+
         mouse_x, mouse_y = pyautogui.position()
         target_x = (mouse_x - 974) / 1000.0
         target_y = (2 * 519 - mouse_y) / 1000.0

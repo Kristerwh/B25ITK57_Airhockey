@@ -35,9 +35,14 @@ def reset_env(env, randomize_puck=True):
     if randomize_puck:
         puck_x = np.random.uniform(-0.4, -0.1)
         puck_y = np.random.uniform(-0.2, 0.4)
+        env._data.qvel[env._model.jnt("puck_x").dofadr] = np.random.uniform(0.05, 0.15)
+        env._data.qvel[env._model.jnt("puck_y").dofadr] = np.random.uniform(-0.05, 0.05)
+
     else:
         puck_x = -0.3
         puck_y = 0.0
+        env._data.qvel[env._model.jnt("puck_x").dofadr] = 0.0
+        env._data.qvel[env._model.jnt("puck_y").dofadr] = 0.0
 
     mallet_x = -0.10
     mallet_y = 0.0
@@ -75,7 +80,7 @@ def main(render=True):
     obs_dim = 8
     act_dim = 2
     trainer = PPOTrainer(obs_dim, act_dim)
-    total_episodes = 1000
+    total_episodes = 3000
     rollout_len = 500
 
     reward_log = []
@@ -89,7 +94,8 @@ def main(render=True):
 
         if ep >= 500:
             env._data.qpos[0:2] = -0.3, 0.0
-            env._data.qvel[0:2] = 0, 0
+            env._data.qvel[0] = np.random.uniform(0.1, 0.3)
+            env._data.qvel[1] = np.random.uniform(-0.1, 0.1)
             mujoco.mj_forward(env._model, env._data)
 
         obs_buf, act_buf, logp_buf, rew_buf, val_buf, done_buf = [], [], [], [], [], []
@@ -124,14 +130,10 @@ def main(render=True):
             next_obs_raw, _, done, _ = env.step(action1)
             next_obs = strip_z(next_obs_raw, env)
 
-            #phase blending (episodes: 0–500 → phase1 to phase2, 500–1000 → phase2 to phase3)
-            if ep < 400:
-                alpha = ep / 400
-                r1 = phase1_reward(obs, action1, next_obs, done, env, ep=ep)
-                r2 = phase2_reward(obs, action1, next_obs, done, env, ep=ep)
-                reward = (1 - alpha) * r1 + alpha * r2
-            elif ep < 1000:
-                alpha = (ep - 400) / 600
+            if ep < 100:
+                reward = phase1_reward(obs, action1, next_obs, done, env, ep=ep)
+            elif ep < 300:
+                alpha = (ep - 100) / 200
                 r2 = phase2_reward(obs, action1, next_obs, done, env, ep=ep)
                 r3 = phase3_reward(obs, action1, next_obs, done, env, ep=ep)
                 reward = (1 - alpha) * r2 + alpha * r3
@@ -153,7 +155,7 @@ def main(render=True):
                 mujoco.mj_step(model, data)
                 viewer.sync()
 
-            if is_colliding_ppo(next_obs[0:2], next_obs[4:6]):  # <- REPLACED
+            if is_colliding_ppo(next_obs[0:2], next_obs[4:6]):
                 writer.add_scalar("Hit", 1, ep)
             if next_obs[0] > 0 and done:
                 writer.add_scalar("Goal", 1, ep)

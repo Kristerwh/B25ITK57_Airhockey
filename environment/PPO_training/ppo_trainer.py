@@ -3,15 +3,14 @@ import numpy as np
 from collections import deque
 from environment.PPO_training.ppo_agent import PPOAgent
 
-
 class PPOTrainer:
     def __init__(self, obs_dim, action_dim, clip_eps=0.2, gamma=0.99, lam=0.95, lr=3e-4):
         self.agent = PPOAgent(obs_dim, action_dim, lr)
         self.clip_eps = clip_eps
         self.gamma = gamma
         self.lam = lam
-        self.entropy_coef = 0.01
-        self.entropy_anneal_rate = 0.00001
+        self.entropy_coef = 0.05
+        self.entropy_anneal_rate = 0.000005
         self._current_episode = 0
 
     def compute_gae(self, rewards, values, dones):
@@ -69,13 +68,13 @@ class PPOTrainer:
                 value_losses.append(value_loss.item())
                 entropy_vals.append(entropy.mean().item())
 
-        if self._current_episode < 600:
-            self.entropy_coef = max(0.001, self.entropy_coef - self.entropy_anneal_rate)
+        # Slower entropy annealing
+        if self._current_episode < 2000:
+            self.entropy_coef = max(0.005, self.entropy_coef - self.entropy_anneal_rate)
         else:
-            self.entropy_coef = max(self.entropy_coef, 0.01)  # freeze decay
+            self.entropy_coef = max(self.entropy_coef, 0.01)
 
         return np.mean(policy_losses), np.mean(value_losses), np.mean(entropy_vals)
-
 
     def act(self, obs):
         obs_tensor = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
