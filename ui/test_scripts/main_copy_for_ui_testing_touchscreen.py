@@ -1,6 +1,8 @@
 import sys
 import os
 import time
+
+# import keyboard
 import numpy as np
 import pyautogui
 import mujoco
@@ -37,6 +39,13 @@ def reset_game():
 
 reset_game()
 
+def disable_left_mouse(viewer):
+    def blocked_mouse_handler(*args, **kwargs):
+        # This blocks all left click interactions (camera rotation)
+        pass
+
+    viewer._render_mouse = blocked_mouse_handler
+
 scene = mujoco.MjvScene(model, maxgeom=1000)
 camera = mujoco.MjvCamera()
 # camera.type = mujoco.mjtCamera.mjCAMERA_FREE
@@ -51,27 +60,56 @@ mujoco.mjv_defaultOption(option)
 option.frame = mujoco.mjtFrame.mjFRAME_NONE
 #mujoco.mjv_defaultCamera(camera)
 
+from pynput import mouse, keyboard
+def on_click(x, y, button, pressed):
+    if button == mouse.Button.left:
+        return False  # Block the click event
+def esc_listener():
+    def on_press(key):
+        if key == keyboard.Key.esc:
+            print("Escape pressed. Exiting...")
+            sys.exit()
+    listener = keyboard.Listener(on_press=on_press)
+    listener.start()
+
+# Start the listener in the background
+mouse_listener = mouse.Listener(on_click=on_click, suppress=True)
+mouse_listener.start()
+esc_listener()
+
+
 with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
     time.sleep(1)
-    pyautogui.getWindowsWithTitle("MuJoCo")[0].maximize()
-    while viewer.is_running():
+    viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+    viewer.cam.lookat[:] = [0.0, 0.0, 0.0]
+    viewer.cam.azimuth = 90
+    viewer.cam.elevation = -90
+    viewer.cam.distance = 1.39
+    viewer.cam.trackbodyid = -1
+    viewer.cam.fixedcamid = -1
 
-        viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
-        viewer.cam.lookat[:] = [0.0, 0.0, 0.0]
+    if abs(viewer.cam.azimuth - 90) > 1 or abs(viewer.cam.elevation + 90) > 1:
         viewer.cam.azimuth = 90
         viewer.cam.elevation = -90
-        viewer.cam.distance = 1.39
-        viewer.cam.trackbodyid = -1
-        viewer.cam.fixedcamid = -1
-
-        if abs(viewer.cam.azimuth - 90) > 1 or abs(viewer.cam.elevation + 90) > 1:
-            viewer.cam.azimuth = 90
-            viewer.cam.elevation = -90
+    pyautogui.getWindowsWithTitle("MuJoCo")[0].maximize()
+    while viewer.is_running():
+        # viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+        # viewer.cam.lookat[:] = [0.0, 0.0, 0.0]
+        # viewer.cam.azimuth = 90
+        # viewer.cam.elevation = -90
+        # viewer.cam.distance = 1.39
+        # viewer.cam.trackbodyid = -1
+        # viewer.cam.fixedcamid = -1
+        #
+        # if abs(viewer.cam.azimuth - 90) > 1 or abs(viewer.cam.elevation + 90) > 1:
+        #     viewer.cam.azimuth = 90
+        #     viewer.cam.elevation = -90
 
         mouse_x, mouse_y = pyautogui.position()
-        target_x = (mouse_x - 974) / 1000.0
-        target_y = (2 * 519 - mouse_y) / 1000.0
-        target_pos = np.clip(np.array([target_x, target_y]), [-0.95, -0.45], [0.95, 0.45])
+        #target_x = (mouse_x - 974) / 1000.0
+        #target_y = (2 * 519 - mouse_y) / 1000.0
+        #target_pos = np.clip(np.array([target_x, target_y]), [-0.95, -0.45], [0.95, 0.45])
+        target_pos = np.array([((mouse_x/965)-0.195), -((mouse_y/970) -0.55)])
 
         data.qpos[3:5] = target_pos
         data.qvel[3:5] = 0
