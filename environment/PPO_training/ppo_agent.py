@@ -2,36 +2,32 @@ import torch
 import torch.nn as nn
 from torch.distributions import Normal
 
-
 class Actor(nn.Module):
     def __init__(self, input_dim, action_dim):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, 64), nn.ReLU(),
-            nn.Linear(64, 64), nn.ReLU(),
-            nn.Linear(64, action_dim)
+            nn.Linear(input_dim, 128), nn.ReLU(),
+            nn.Linear(128, 128), nn.ReLU(),
+            nn.Linear(128, action_dim)
         )
         self.log_std = nn.Parameter(torch.zeros(action_dim).clamp(-1, 1))
-
 
     def forward(self, x):
         mu = self.net(x)
         std = torch.exp(self.log_std.clamp(-2, 2))
         return Normal(mu, std)
 
-
 class Critic(nn.Module):
     def __init__(self, input_dim):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, 64), nn.ReLU(),
-            nn.Linear(64, 64), nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.Linear(input_dim, 128), nn.ReLU(),
+            nn.Linear(128, 128), nn.ReLU(),
+            nn.Linear(128, 1)
         )
 
     def forward(self, x):
         return self.net(x).squeeze(-1)
-
 
 class PPOAgent:
     def __init__(self, obs_dim, action_dim, lr=3e-4):

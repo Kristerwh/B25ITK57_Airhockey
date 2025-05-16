@@ -9,8 +9,8 @@ class PPOTrainer:
         self.clip_eps = clip_eps
         self.gamma = gamma
         self.lam = lam
-        self.entropy_coef = 0.05
-        self.entropy_anneal_rate = 0.000005
+        self.entropy_coef = 0.01  # more conservative start, less annealing weirdness
+        self.entropy_anneal_rate = 0.000002
         self._current_episode = 0
 
     def compute_gae(self, rewards, values, dones):
@@ -62,6 +62,8 @@ class PPOTrainer:
                 loss = policy_loss + 0.5 * value_loss + entropy_loss
                 self.agent.optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.agent.actor.parameters(), 0.5)  # <-- ADDED
+                torch.nn.utils.clip_grad_norm_(self.agent.critic.parameters(), 0.5) # <-- ADDED
                 self.agent.optimizer.step()
 
                 policy_losses.append(policy_loss.item())

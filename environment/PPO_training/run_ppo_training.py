@@ -7,7 +7,7 @@ from environment.env_settings.environments.iiwas.env_base import AirHockeyBase
 from environment.env_settings.environments.position_controller_mallet_wrapper import MalletControl
 from environment.PPO_training.ppo_trainer import PPOTrainer
 from environment.PPO_training.ppo_rewards import phase1_reward, phase2_reward, phase3_reward
-#phase4_reward, phase5_reward
+# phase4_reward, phase5_reward
 
 from rule_based_ai_agent_v31 import AI_script_v31 as script
 from environment.env_settings.environments.iiwas.env_base import is_colliding_ppo
@@ -31,13 +31,11 @@ def strip_z(obs, env):
 
 def reset_env(env, randomize_puck=True):
     obs = env.reset()
-
     if randomize_puck:
         puck_x = np.random.uniform(-0.4, -0.1)
         puck_y = np.random.uniform(-0.2, 0.4)
         env._data.qvel[env._model.jnt("puck_x").dofadr] = np.random.uniform(0.05, 0.15)
         env._data.qvel[env._model.jnt("puck_y").dofadr] = np.random.uniform(-0.05, 0.05)
-
     else:
         puck_x = -0.3
         puck_y = 0.0
@@ -81,7 +79,6 @@ def main(render=True):
     act_dim = 2
     trainer = PPOTrainer(obs_dim, act_dim)
     total_episodes = 3000
-    rollout_len = 500
 
     reward_log = []
     policy_losses, value_losses, entropies = [], [], []
@@ -89,21 +86,30 @@ def main(render=True):
     def run_episode(ep):
         env.prev_action = np.zeros(2)
 
-        use_random_puck = ep < 500
-        obs = strip_z(reset_env(env, randomize_puck=use_random_puck), env)
+        # Set episode length
+        rollout_len = 500 if ep < 800 else 1500  # Longer episodes after 800
 
-        if ep >= 500:
-            env._data.qpos[0:2] = -0.3, 0.0
-            env._data.qvel[0] = np.random.uniform(0.1, 0.3)
-            env._data.qvel[1] = np.random.uniform(-0.1, 0.1)
-            mujoco.mj_forward(env._model, env._data)
+        # Always reset environment at start of episode
+        use_random_puck = True
+        obs = strip_z(reset_env(env, randomize_puck=use_random_puck), env)
 
         obs_buf, act_buf, logp_buf, rew_buf, val_buf, done_buf = [], [], [], [], [], []
         episode_reward = 0
         use_scripted = (ep >= 50)
 
+        # Variables for stuck detection
+        stuck_counter = 0
+        prev_mallet = None
+        prev_puck = None
+
         for step in range(rollout_len):
             action1, log_prob = trainer.act(obs)
+
+            # Keep game flowing in late phase
+            if ep >= 800 and step % 150 == 0:
+                env._data.qvel[env._model.jnt("puck_x").dofadr] += np.random.uniform(0.02, 0.05)
+                env._data.qvel[env._model.jnt("puck_y").dofadr] += np.random.uniform(-0.02, 0.02)
+
             action1 = np.clip(action1, -100, 100)
             value = trainer.evaluate(obs)
 
@@ -148,6 +154,21 @@ def main(render=True):
             rew_buf.append(reward)
             val_buf.append(value)
             done_buf.append(done)
+
+            # ---- Optional: stuck detection ----
+            if prev_mallet is not None and prev_puck is not None:
+                mallet_move = np.linalg.norm(next_obs[4:6] - prev_mallet)
+                puck_move = np.linalg.norm(next_obs[0:2] - prev_puck)
+                if mallet_move < 0.01 and puck_move < 0.01:
+                    stuck_counter += 1
+                else:
+                    stuck_counter = 0
+                if stuck_counter > 200:
+                    done = True  # force episode end if stuck for too long
+
+            prev_mallet = next_obs[4:6]
+            prev_puck = next_obs[0:2]
+            # -----------------------------------
 
             obs = next_obs
 
