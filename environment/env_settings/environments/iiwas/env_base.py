@@ -5,7 +5,6 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from environment.env_settings.environments.data.iiwas import __file__ as env_path
-from environment.env_settings.utils.universal_joint_plugin import UniversalJointPlugin
 from mushroom_rl.environments.mujoco import MuJoCo, ObservationType
 from mushroom_rl.utils.spaces import Box
 

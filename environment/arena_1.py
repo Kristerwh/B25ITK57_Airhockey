@@ -102,7 +102,7 @@ ppoagent = PPOTrainer(obs_dim=8, action_dim=2)
 ppoagent.load("PPO_training/PPO_training_saved_models/saved_model")
 scripted_ai = script.startup()
 scripted_ai2 = script.startup()
-chosen_agent = scripted_ai
+chosen_agent = ppoagent
 
 # Set up TensorBoard writer
 run_id = time.strftime("%Y%m%d-%H%M%S")
