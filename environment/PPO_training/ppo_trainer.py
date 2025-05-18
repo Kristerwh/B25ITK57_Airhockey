@@ -9,7 +9,7 @@ class PPOTrainer:
         self.clip_eps = clip_eps
         self.gamma = gamma
         self.lam = lam
-        self.entropy_coef = 0.01  # more conservative start, less annealing weirdness
+        self.entropy_coef = 0.01
         self.entropy_anneal_rate = 0.000002
         self._current_episode = 0
 
@@ -70,7 +70,6 @@ class PPOTrainer:
                 value_losses.append(value_loss.item())
                 entropy_vals.append(entropy.mean().item())
 
-        # Slower entropy annealing
         if self._current_episode < 2000:
             self.entropy_coef = max(0.005, self.entropy_coef - self.entropy_anneal_rate)
         else:

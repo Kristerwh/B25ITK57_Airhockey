@@ -42,10 +42,9 @@ class MainMenu(QMainWindow):
         layout.addWidget(banner)
 
         button_definitions = {
-            "Manual AI vs AI": self.run_manual_vs_ai,
-            "Touchscreen test vs AI": self.touchscreen_vs_ai,
-            "PPO Agent Vs Human(no fine tuning)": self.PPOagent_vs_human_eva,
-            "PPO Agent Vs Human(with fine tuning)": self.PPOagent_vs_human,
+            "Rule Based AI vs Rule Based AI(Observation Only)": self.run_manual_vs_ai,
+            "Human vs Rule Based AI": self.touchscreen_vs_ai,
+            "Current PPO Agent Vs Human": self.PPOagent_vs_human_eva,
             "Human Vs Human Normal Match": self.human_vs_human,
             "Show Stats": self.show_stats,
         }
@@ -72,19 +71,15 @@ class MainMenu(QMainWindow):
             layout.addWidget(btn)
 
     def run_manual_vs_ai(self):
-        script_path = os.path.abspath("test_scripts/main_copy_for_ui_testing_ai_vs_ai.py")
+        script_path = os.path.abspath("rule_based_ai_scripts/main_copy_for_ui_testing_ai_vs_ai.py")
         subprocess.Popen([sys.executable, script_path])
 
     def touchscreen_vs_ai(self):
-        script_path = os.path.abspath("test_scripts/main_copy_for_ui_testing_touchscreen.py")
+        script_path = os.path.abspath("rule_based_ai_scripts/main_copy_for_ui_testing_touchscreen.py")
         subprocess.Popen([sys.executable, script_path])
 
     def PPOagent_vs_human_eva(self):
         script_path = os.path.abspath("main_touchscreen_finetune_eva.py")
-        subprocess.Popen([sys.executable, script_path])
-
-    def PPOagent_vs_human(self):
-        script_path = os.path.abspath("main_touchscreen_finetune.py")
         subprocess.Popen([sys.executable, script_path])
 
     def human_vs_human(self):
@@ -101,5 +96,6 @@ if __name__ == "__main__":
     menu.show()
     sys.exit(app.exec_())
 
+#correct paths to models
 # "../environment/PPO_training/PPO_training_saved_models/saved_model"
 # "../environment/PPO_training/PPO_training_vs_human_saved_models/fine_tuned_model"
