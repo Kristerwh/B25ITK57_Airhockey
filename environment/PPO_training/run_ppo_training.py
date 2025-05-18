@@ -45,13 +45,13 @@ def reset_env(env, randomize_puck=True):
     mallet_x = -0.10
     mallet_y = 0.0
 
-    # Set positions
+    #positions
     env._data.qpos[env._model.jnt("puck_x").qposadr] = puck_x
     env._data.qpos[env._model.jnt("puck_y").qposadr] = puck_y
     env._data.qpos[env._model.jnt("paddle_left_x").qposadr] = mallet_x
     env._data.qpos[env._model.jnt("paddle_left_y").qposadr] = mallet_y
 
-    # Zero velocities
+    #velocities
     env._data.qvel[env._model.jnt("puck_x").dofadr] = 0
     env._data.qvel[env._model.jnt("puck_y").dofadr] = 0
     env._data.qvel[env._model.jnt("paddle_left_x").dofadr] = 0
@@ -86,10 +86,9 @@ def main(render=True):
     def run_episode(ep):
         env.prev_action = np.zeros(2)
 
-        # Set episode length
+        #episode length
         rollout_len = 500 if ep < 800 else 1500  # Longer episodes after 800
 
-        # Always reset environment at start of episode
         use_random_puck = True
         obs = strip_z(reset_env(env, randomize_puck=use_random_puck), env)
 
@@ -97,7 +96,6 @@ def main(render=True):
         episode_reward = 0
         use_scripted = (ep >= 50)
 
-        # Variables for stuck detection
         stuck_counter = 0
         prev_mallet = None
         prev_puck = None
@@ -105,7 +103,6 @@ def main(render=True):
         for step in range(rollout_len):
             action1, log_prob = trainer.act(obs)
 
-            # Keep game flowing in late phase
             if ep >= 800 and step % 150 == 0:
                 env._data.qvel[env._model.jnt("puck_x").dofadr] += np.random.uniform(0.02, 0.05)
                 env._data.qvel[env._model.jnt("puck_y").dofadr] += np.random.uniform(-0.02, 0.02)
@@ -155,7 +152,6 @@ def main(render=True):
             val_buf.append(value)
             done_buf.append(done)
 
-            # ---- Optional: stuck detection ----
             if prev_mallet is not None and prev_puck is not None:
                 mallet_move = np.linalg.norm(next_obs[4:6] - prev_mallet)
                 puck_move = np.linalg.norm(next_obs[0:2] - prev_puck)
@@ -164,11 +160,10 @@ def main(render=True):
                 else:
                     stuck_counter = 0
                 if stuck_counter > 200:
-                    done = True  # force episode end if stuck for too long
+                    done = True
 
             prev_mallet = next_obs[4:6]
             prev_puck = next_obs[0:2]
-            # -----------------------------------
 
             obs = next_obs
 

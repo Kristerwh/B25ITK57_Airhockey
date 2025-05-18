@@ -41,7 +41,6 @@ reset_game()
 
 def disable_left_mouse(viewer):
     def blocked_mouse_handler(*args, **kwargs):
-        # This blocks all left click interactions (camera rotation)
         pass
 
     viewer._render_mouse = blocked_mouse_handler
@@ -119,7 +118,7 @@ with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui
         mallet2_pos = 2 * 974 - (float(data.xpos[paddle_id2][0]) * 1000 + 974), \
                       2 * 519 - (float(data.xpos[paddle_id2][1]) * 1000 + 519)
 
-        # Rule-based AI movement
+        #Rule-based AI movement
         ai_velocity2 = np.array(script.run(scripted_ai2, puck_pos_reverted, mallet2_pos))
         ai_velocity2 = -ai_velocity2
 

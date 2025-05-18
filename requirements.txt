@@ -1,11 +1,38 @@
 # Install torch without GPU support. If you need GPU support for training I suggest using a local installation with GPU
 # support for training and the docker image for evaluation because the nvidia Packages add 3.5GB to the docker image.
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch
-mujoco
+torch~=2.5.1
+mujoco~=3.3.2
 osqp>=0.6.2.post8
 nlopt>=2.7.1
 mushroom-rl
 PyYAML>=6.0
 git+https://github.com/huaweicloud/huaweicloud-sdk-python-obs.git#egg=esdk-obs-python&subdirectory=src
 dm_control
+
+PyQt5~=5.15.11
+numpy~=2.1.3
+PyAutoGUI~=0.9.54
+pynput~=1.8.1
+requests~=2.32.3
+crcmod~=1.7
+pycryptodome~=3.22.0
+attrs~=25.3.0
+protobuf~=5.29.4
+pillow~=11.2.1
+filelock~=3.18.0
+typing_extensions~=4.13.2
+fsspec~=2025.3.2
+lxml~=5.4.0
+matplotlib~=3.10.1
+MarkupSafe~=3.0.2
+scipy~=1.15.2
+pytest~=8.3.5
+python-dateutil~=2.9.0.post0
+packaging~=25.0
+tomli~=2.2.1
+zipp~=3.21.0
+Pygments~=2.19.1
+tensorflow~=2.19.0
+tqdm~=4.67.1
+tensorboard~=2.19.0
