@@ -123,13 +123,11 @@ try:
             action2 = np.array([-action2[0], -action2[1]])
             action = np.concatenate((action1, action2))
 
-            control_action = controller.apply_action(action)
-            # data.ctrl[:2] = control_action[:2]
-            data.ctrl[2:4] = control_action[2:4]
+            data.ctrl[2:4] = action2[:2]
 
             next_obs, reward, absorbing, _ = env.step(action1)
             mujoco.mj_step(model, data)
-            obs_buffer.append(obs.copy())  # obs.shape = (5,8)
+            obs_buffer.append(obs.copy())
             action_buffer.append(action1)
             reward_buffer.append(reward)
 
@@ -140,7 +138,7 @@ try:
             step += 1
 
             if step % 500 == 0 or absorbing:
-                if reward_buffer: # Only train if we have something
+                if reward_buffer:
                     reward_buffer = [r if r is not None else 0.0 for r in reward_buffer]
                     returns = compute_returns(reward_buffer)
                     returns = (returns - np.mean(returns)) / (np.std(returns) + 1e-8)
@@ -169,7 +167,7 @@ try:
                     obs_sequence.clear()
                     obs_raw = strip_z(env.reset())
                     for _ in range(sequence_length):
-                        obs_sequence.append(obs_raw)  # samme bilde 5 ganger
+                        obs_sequence.append(obs_raw)
                     obs = np.array(obs_sequence)
                     step = 0
                     episode += 1
