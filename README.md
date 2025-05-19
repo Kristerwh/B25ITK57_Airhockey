@@ -1,7 +1,8 @@
 # B25ITK57 Airhockey AI
 
 Dette prosjektet inneholder et simuleringsmiljø og et sett med Reinforcement Learning-agenter for å trene og evaluere AI-strategier i et Air Hockey-spill. Prosjektet er utviklet i forbindelse med en bacheloroppgave ved Høgskolen i Østfold.
-Innhold
+
+Innhold:
 
 - Simulert Air Hockey-miljø basert på MuJoCo
     
