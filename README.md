@@ -41,6 +41,10 @@ PPO-trening: start PPO-treningen med
 Juster eller endre belønningsfunksjoner for PPO-agenten:
     
     environment/PPO_training/ppo_rewards.py for å tilpasse hvordan agenten får poeng.
+    
+Juster n_intermediate_steps=1 til n_intermediate_steps=20 i env_base:
+    
+    env_base > n_intermediate_steps=20
 
 Tren egendefinert RL-agent: Tren den egendefinerte agenten med
     
