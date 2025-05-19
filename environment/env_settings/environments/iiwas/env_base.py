@@ -4,7 +4,7 @@ import mujoco
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from environment.env_settings.environments.data.iiwas import __file__ as env_path
+from environment.env_settings.environments.data import __file__ as env_path
 from mushroom_rl.environments.mujoco import MuJoCo, ObservationType
 from mushroom_rl.utils.spaces import Box
 
@@ -42,13 +42,13 @@ class AirHockeyBase(MuJoCo):
                           ("rim_short_sides", ["rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
 
         if self.n_agents == 1:
-            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")
+            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "table.xml")
             action_spec += ["left_mallet_x_motor", "left_mallet_y_motor"]
             collision_spec += [
                 ("paddle_left", ["puck", "rim_left", "rim_right", "rim_home_l", "rim_home_r", "rim_away_l", "rim_away_r"])]
 
         else:  # Two-player mode
-            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "single.xml")  # Load updated XML
+            scene = os.path.join(os.path.dirname(os.path.abspath(env_path)), "table.xml")  # Load updated XML
             action_spec += ["left_mallet_x_motor", "left_mallet_y_motor",
                             "right_mallet_x_motor", "right_mallet_y_motor"]
             additional_data += [("paddle_right_x_pos", "paddle_right_x", ObservationType.JOINT_POS),
@@ -246,7 +246,7 @@ class AirHockeyBase(MuJoCo):
         self._data.qpos[self._model.jnt("puck_x").qposadr] = x
 
     def reset(self, randomize="xy", obs=None):
-        super().reset(obs)  # This will set up model/data/obs_helper and reset MuJoCo
+        super().reset(obs)
         if randomize == "xy":
             self._randomize_puck_position()
         if randomize == "y":
@@ -254,8 +254,6 @@ class AirHockeyBase(MuJoCo):
         if randomize == "opponent_y":
             self._randomize_puck_position_y_opponent()
         mujoco.mj_forward(self._model, self._data)
-
-        # Recreate observation from updated state
         self._obs = self._create_observation(self.obs_helper._build_obs(self._data))
         return self._obs
 
