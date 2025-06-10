@@ -67,7 +67,7 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         action = np.concatenate((ai_velocity, ai_velocity2))  # Shape (4,)
         #print(ai_velocity)
         #print("test")
-        print("-"*50)
+        #print("-"*50)
 
         control_action = controller.apply_action(action)
         data.ctrl[:2] = control_action[:2]

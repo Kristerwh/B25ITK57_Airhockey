@@ -46,8 +46,6 @@ class MainMenu(QMainWindow):
             "Human vs Rule Based AI": self.touchscreen_vs_ai,
             "Slower AI": self.touchscreen_lowlvl_vs_ai,
             "Current PPO Agent Vs Human": self.PPOagent_vs_human_eva,
-            "Human Vs Human Normal Match": self.human_vs_human,
-            "Arena": self.show_stats,
         }
 
         for label, callback in button_definitions.items():
@@ -76,11 +74,11 @@ class MainMenu(QMainWindow):
         subprocess.Popen([sys.executable, script_path])
 
     def touchscreen_vs_ai(self):
-        script_path = os.path.abspath("rule_based_ai_scripts/main_copy_for_ui_testing_touchscreen.py")
+        script_path = os.path.abspath("rule_based_ai_scripts/main_rulebased_new_for_ui_testing_touchscreen.py")
         subprocess.Popen([sys.executable, script_path])
 
     def PPOagent_vs_human_eva(self):
-        script_path = os.path.abspath("main_touchscreen_finetune_eva.py")
+        script_path = os.path.abspath("rule_based_ai_scripts/main_RL_new_for_ui_testing_touchscreen.py")
         subprocess.Popen([sys.executable, script_path])
 
     def human_vs_human(self):
@@ -92,7 +90,7 @@ class MainMenu(QMainWindow):
         subprocess.Popen([sys.executable, script_path])
 
     def touchscreen_lowlvl_vs_ai(self):
-        script_path = os.path.abspath("rule_based_ai_scripts/main_slow_for_ui_testing_touchscreen.py")
+        script_path = os.path.abspath("rule_based_ai_scripts/main_slowed_new_for_ui_testing_touchscreen.py")
         subprocess.Popen([sys.executable, script_path])
 
 if __name__ == "__main__":
