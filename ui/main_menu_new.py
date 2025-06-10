@@ -70,7 +70,7 @@ class MainMenu(QMainWindow):
             layout.addWidget(btn)
 
     def run_manual_vs_ai(self):
-        script_path = os.path.abspath("rule_based_ai_scripts/main_copy_for_ui_testing_ai_vs_ai.py")
+        script_path = os.path.abspath("rule_based_ai_scripts/main_rulebasedvsrulesbased_new_for_ui_testing_touchscreen.py")
         subprocess.Popen([sys.executable, script_path])
 
     def touchscreen_vs_ai(self):
